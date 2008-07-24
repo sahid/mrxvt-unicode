@@ -450,11 +450,9 @@ static const struct {
 	"multichar encoding mode = eucj|sjis|big5|gb|gbk|kr|noenc", 0),
 #endif		    /* MULTICHAR_SET */
 
-#ifdef USE_XIM
     STRG(Rs_inputMethod, "inputMethod", "im", "name", "name of input method", 0),
     STRG(Rs_preeditType, "preeditType", "pt", "style",
 	"input style = OverTheSpot|OffTheSpot|Root", 0),
-#endif		    /* USE_XIM */
 
 #ifdef GREEK_SUPPORT
     STRG(Rs_greek_keyboard, "greek_keyboard", "grk", "mode",
@@ -606,9 +604,6 @@ static const char optionsstring[] = "Options: "
 #endif
 #if defined(HAVE_MENUBAR)
     "menubar,"
-#endif
-#if defined(USE_XIM)
-    "XIM,"
 #endif
 #if defined(MULTICHAR_SET)
     "multichar_languages,"

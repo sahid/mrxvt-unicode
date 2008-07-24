@@ -106,9 +106,7 @@ typedef struct {
 #ifdef MULTICHAR_SET
     XFontStruct*    mfont;  /* Multichar font structure */
 #endif
-#ifdef USE_XIM
     XFontSet	    fontset;
-#endif
 #ifdef XFT_SUPPORT
     XftPattern*	    xftpattern;
     XftFont	    *xftfont, *xftpfont, *xftPfont;

@@ -50,7 +50,6 @@ void rxvt_font_up_down         (rxvt_t*, int, int);
 int  rxvt_get_font_widest      (XFontStruct*);
 void rxvt_set_colorfgbg        (rxvt_t*);
 void rxvt_resize_sub_windows   (rxvt_t*);
-#ifdef USE_XIM
 void rxvt_IM_set_size          (rxvt_t*, XRectangle*);
 void rxvt_IM_set_position      (rxvt_t*, XPoint*);
 void rxvt_IM_set_color         (rxvt_t*, unsigned long*, unsigned long*);
@@ -61,7 +60,6 @@ void rxvt_IM_destroy_callback  (XIM, XPointer, XPointer);
 Bool rxvt_IM_get_IC            (rxvt_t*);
 void rxvt_IM_send_size         (rxvt_t*);
 void rxvt_IM_set_status_pos    (rxvt_t*);
-#endif
 void rxvt_set_r                (rxvt_t*);
 #ifdef XFT_SUPPORT
 void xftFreeUnusedFont	       (rxvt_t*, XftFont*);
@@ -335,13 +333,11 @@ rxvt_free_hidden( rxvt_t* r )
 # endif
 #endif	/* DEBUG */
 
-#ifdef USE_XIM
     if( r->h->Input_Context )   
     {
 	XDestroyIC( r->h->Input_Context );
 	SET_NULL(r->h->Input_Context); 
     }
-#endif
 }
 
 
@@ -2113,9 +2109,7 @@ rxvt_change_font_x11 (rxvt_t* r, const char *fontname)
     }
 #endif	/* MULTICHAR_SET */
 
-#ifdef USE_XIM
     rxvt_IM_change_fontset(r, idx);
-#endif
     return 1;
 }
 
@@ -2600,7 +2594,6 @@ rxvt_alloc_color( rxvt_t* r, XColor *screen_in_out, const char *colour )
 /* -------------------------------------------------------------------- *
  * -			    X INPUT METHOD ROUTINES			- *
  * -------------------------------------------------------------------- */
-#ifdef USE_XIM
 /* INTPROTO */
 void
 rxvt_IM_set_size(rxvt_t* r, XRectangle *size)
@@ -2802,10 +2795,12 @@ rxvt_IM_destroy_callback(XIM xim __attribute__((unused)), XPointer client_data _
     rxvt_t	    *r = rxvt_get_r();
 
     SET_NULL(r->h->Input_Context);
+#ifdef USE_XRegisterIMInstantiateCallback
     /* To avoid Segmentation Fault in C locale: Solaris only? */
     if (STRCMP(r->h->locale, "C"))
 	XRegisterIMInstantiateCallback(r->Xdisplay, NULL, NULL, NULL,
 	    rxvt_IM_init_callback, NULL);
+#endif
 }
 
 /*
@@ -3075,7 +3070,6 @@ rxvt_IM_resize(rxvt_t *r)
     else if (r->h->input_style & XIMPreeditArea)
 	rxvt_IM_set_status_pos(r);
 }
-#endif		    /* USE_XIM */
 
 /*----------------------------------------------------------------------*/
 static rxvt_t  *_rxvt_vars = NULL;

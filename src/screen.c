@@ -5935,11 +5935,7 @@ void
 rxvt_process_selectionrequest (rxvt_t* r, int page, const XSelectionRequestEvent *rq)
 {
     XSelectionEvent ev;
-#ifdef USE_XIM
     Atom	  target_list[4];
-#else
-    Atom	  target_list[3];
-#endif
     Atom	    target;
     XTextProperty   ct;
     XICCEncodingStyle style;
@@ -5958,9 +5954,7 @@ rxvt_process_selectionrequest (rxvt_t* r, int page, const XSelectionRequestEvent
 	target_list[0] = r->h->xa[XA_TARGETS];
 	target_list[1] = XA_STRING;
 	target_list[2] = r->h->xa[XA_TEXT];
-#ifdef USE_XIM
 	target_list[3] = r->h->xa[XA_COMPOUND_TEXT];
-#endif
 	XChangeProperty(r->Xdisplay, rq->requestor, rq->property,
 	    XA_ATOM, 32, PropModeReplace,
 	    (unsigned char *)target_list,
@@ -5986,19 +5980,15 @@ rxvt_process_selectionrequest (rxvt_t* r, int page, const XSelectionRequestEvent
 	      || rq->target == r->h->xa[XA_TEXT]
 	    )
     {
-#ifdef USE_XIM
 	short	       freect = 0;
-#endif
 	int	     selectlen;
 
-#ifdef USE_XIM
 	if (rq->target != XA_STRING)
 	{
 	    target = r->h->xa[XA_COMPOUND_TEXT];
 	    style = (rq->target == r->h->xa[XA_COMPOUND_TEXT])
 		? XCompoundTextStyle : XStdICCTextStyle;
 	} else
-#endif
 	{
 	    target = XA_STRING;
 	    style = XStringStyle;
@@ -6014,11 +6004,9 @@ rxvt_process_selectionrequest (rxvt_t* r, int page, const XSelectionRequestEvent
 	    *dummy = '\0';
 	    selectlen = 0;
 	}
-#ifdef USE_XIM
 	if (XmbTextListToTextProperty(r->Xdisplay, cl, 1, style, &ct) == Success)	/* if we failed to convert then send it raw */
 	    freect = 1;
 	else
-#endif
 	{
 	    ct.value = (unsigned char *)cl[0];
 	    ct.nitems = selectlen;
@@ -6027,10 +6015,8 @@ rxvt_process_selectionrequest (rxvt_t* r, int page, const XSelectionRequestEvent
 	    target, 8, PropModeReplace,
 	    ct.value, (int)ct.nitems);
 	ev.property = rq->property;
-#ifdef USE_XIM
 	if (freect)
 	    XFree(ct.value);
-#endif
     }
     XSendEvent(r->Xdisplay, rq->requestor, False, 0L, (XEvent *)&ev);
 }

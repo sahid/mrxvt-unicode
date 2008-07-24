@@ -154,7 +154,6 @@ support_xpm=yes
 support_jpeg=yes
 support_png=yes
 support_xft=no
-support_xim=no
 support_greek=no
 support_cjk=no
 support_ttygid=yes
@@ -210,7 +209,6 @@ if test "x$support_everything" = "xyes"; then
     support_jpeg=yes
     support_png=yes
     support_xft=yes
-    support_xim=yes
     support_greek=yes
     support_cjk=yes
     support_ttygid=yes
@@ -265,7 +263,6 @@ if test "x$support_minimal" = "xyes"; then
     support_jpeg=no
     support_png=no
     support_xft=no
-    support_xim=no
     support_greek=no
     support_cjk=no
     support_ttygid=yes
@@ -621,14 +618,6 @@ AC_ARG_ENABLE(
     [support_xft=$enableval]
 )
 
-
-AC_ARG_ENABLE(
-    xim,
-    AC_HELP_STRING([--enable-xim],[enable XIM support [[no]]]),
-    [support_xim=$enableval]
-)
-
-
 AC_ARG_ENABLE(
     greek,
     AC_HELP_STRING([--enable-greek],[enable Greek keyboard support [[no]]]),
@@ -883,16 +872,6 @@ dnl     XextAddDisplay,
 dnl     [],
 dnl     AC_MSG_ERROR([Mrxvt requires the libXext libraries.])
 dnl )
-
-
-if test "x$support_xim" = "xyes"; then
-    AC_CHECK_LIB(
-        X11,
-        XRegisterIMInstantiateCallback,
-        AC_DEFINE(USE_XIM, [], [set XIM support]),
-        [support_xim=no]
-    )
-fi
 
 
 if test "x$support_sessionmgr" = "xyes"; then
@@ -1533,7 +1512,6 @@ fi
 echo
 echo "Multi-language and font features:"
 echo "Freetype Font               : $support_xft"
-echo "X Input Method              : $support_xim"
 echo "Greek keyboard              : $support_greek"
 echo "CJK multichar language      : $support_cjk"
 if test "x$support_cjk" = "xyes"; then

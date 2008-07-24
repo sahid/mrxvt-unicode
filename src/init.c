@@ -606,9 +606,7 @@ const char *const xa_names[NUM_XA] = {
 #ifdef HAVE_X11_SM_SMLIB_H
     "SM_CLIENT_ID",
 #endif
-#ifdef USE_XIM
     "WM_LOCALE_NAME",
-#endif
 #ifdef TRANSPARENT
     "_XROOTPMAP_ID",
     "_XSETROOT_ID",
@@ -655,9 +653,7 @@ rxvt_init_vars(rxvt_t *r)
     }
 
     SET_NULL(r->Xdisplay);
-#ifdef USE_XIM
     SET_NULL(r->TermWin.fontset);
-#endif
     SET_NULL(r->TermWin.font);
 #ifdef MULTICHAR_SET
     SET_NULL(r->TermWin.mfont);
@@ -706,9 +702,7 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(h->MenuBar.title);
 # endif
 
-# ifdef USE_XIM
     SET_NULL(h->Input_Context);
-# endif
     /* SET_NULL(h->v_bufstr); */
     SET_NULL(h->buffer);
 
@@ -1594,7 +1588,6 @@ rxvt_init_env(rxvt_t *r)
 void
 rxvt_init_xlocale(rxvt_t *r)
 {
-#ifdef USE_XIM
     if (IS_NULL(r->h->locale))
 	rxvt_msg (DBG_ERROR, DBG_INIT, "Setting locale failed.");
     else
@@ -1613,12 +1606,15 @@ rxvt_init_xlocale(rxvt_t *r)
 	/* see if we can connect yet */
 	rxvt_IM_init_callback (r->Xdisplay, NULL, NULL);
 
+#if defined(XtSpecificationRelease) && XtSpecificationRelease >= 6 && defined(X_HAVE_UTF8_STRING)
+#define USE_XRegisterIMInstantiateCallback
+	// Taken from xterm.
 	/* To avoid Segmentation Fault in C locale: Solaris only? */
 	if (STRCMP(r->h->locale, "C"))
 	    XRegisterIMInstantiateCallback(r->Xdisplay, NULL, NULL,
 		NULL, rxvt_IM_init_callback, NULL);
-    }
 #endif
+    }
 }
 
 /*----------------------------------------------------------------------*/
