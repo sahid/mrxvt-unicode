@@ -6866,7 +6866,6 @@ rxvt_main_loop(rxvt_t *r)
     unsigned char	ch;
     int			page;
 
-
     rxvt_dbgmsg ((DBG_VERBOSE, DBG_COMMAND,  "Entering rxvt_main_loop()\n" ));
 
     /* Send the screen size. */

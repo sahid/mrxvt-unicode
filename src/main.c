@@ -2893,7 +2893,7 @@ rxvt_IM_get_IC(rxvt_t *r)
     xim = XOpenIM(r->Xdisplay, NULL, NULL, NULL);
     if (IS_NULL(xim))
     {
-	rxvt_msg (DBG_WARN, DBG_MAIN, "Unalbe to open IM\n");
+	rxvt_msg (DBG_WARN, DBG_MAIN, "Unable to open IM\n");
 	return False;
     }
 
