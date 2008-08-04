@@ -462,13 +462,16 @@ rxvt_get_encoding_from_locale (rxvt_t* r)
     char*   enc;
 
     if (IS_NULL(r->h->locale))
-	return NULL;
+		return NULL;
 
 #ifdef HAVE_NL_LANGINFO
+	 // The real good method to know the encoding.
     if (IS_NULL (enc = nl_langinfo (CODESET)))
-	return NULL;
+		return NULL;
 #else
     {
+	rxvt_msg (DBG_WARN, DBG_ENCODING, "nl_langinfo not available: the guessed encoding may be wrong.\n");
+	// XXX: could we consider a third solution which is to run a shell command "locale charmap"?
 	char *end;
 	// the codeset is between '.' and '@'.
 	if (IS_NULL(enc = strchr (r->h->locale, '.')))
@@ -482,7 +485,7 @@ rxvt_get_encoding_from_locale (rxvt_t* r)
 #endif
 
     if ((char) 0 == *enc)
-	return NULL;
+		return NULL;
 
     return enc;
 }
