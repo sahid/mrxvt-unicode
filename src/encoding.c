@@ -624,4 +624,12 @@ rxvt_set_default_font_x11 (rxvt_t* r)
     }
 }
 
+int is_control_character ()
+{
+	// depending on the encoding!
+	// either return -1 if not CC.
+	// else return ASCII equivalent line 913, rxvt.h
+	return FALSE;
+}
+
 /*----------------------- end-of-file (C source) -----------------------*/

@@ -2804,6 +2804,9 @@ rxvt_fill_rectangle (rxvt_t* r, int page, int x, int y, unsigned int w, unsigned
 			 (xdraw), (color), (font), (x), (y),		    \
 			 (unsigned char*) (str), (len))) :		    \
       (xftdraw_string( (xdraw), (color), (font), (x), (y), (str), (len))))
+
+      //(xftdraw_string( (xdraw), (color), (font), (x), (y), ("\x00E9"), (1))))
+
 /*
  * len: number of characters to draw. for UTF-8 string, it is the
  *      number of characters * 2 of the original 16-bits string
@@ -2891,7 +2894,63 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
     }
 # endif	/* TEXT_SHADOW */
 
-    XFTDRAW_STRING (win, fore, font, x, y, str, len);
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\e[32mNow I draw %s\e[0m\n", str));
+    //XFTDRAW_STRING (win, fore, font, x, y, str, len);
+    //XFTDRAW_STRING (win, fore, font, x, y, "a", 1);
+	 {
+		 int i;
+		//FT_Library    library;
+		//FT_Error      error;
+		//FT_Face       face;
+		FT_UInt glyph_index;
+		XftFont* xftfont;
+		Display* dpy;
+		
+		dpy = XftDrawDisplay (win);
+		xftfont = XftFontOpen (
+				    dpy,
+					  DefaultScreen(dpy),
+						XFT_FAMILY, 
+						XftTypeString,
+						"mono",
+						 XFT_SIZE,
+						 XftTypeDouble,
+						 12.0,
+						0);
+
+			/*error = FT_Init_FreeType( &library );
+			if (error)
+					  printf ("Init\n");
+
+			error = FT_New_Face( library, "/usr/share/fonts/corefonts/arial.ttf", 0, &face ); // create face object 
+			if (error)
+					  printf ("Face\n");
+
+
+			error = FT_Set_Char_Size( face, 50 * 64, 0,
+			100, 0 );                // set character size
+			if (error)
+					  printf ("Size\n");*/
+
+	 for (i = 0; i < len; i++)
+	 {
+		 //FT_ULong fu = ((FT_ULong) (str[i])) & 0xff;
+		 FcChar32 fc = ((FcChar32) (str[i])) & 0xff;
+
+		//glyph_index = FT_Get_Char_Index( face, fu);
+		//glyph_index = XftCharIndex (dpy, xftfont, FCchar32);
+		glyph_index = XftCharIndex (dpy, xftfont, fc);
+		//XftDrawGlyphs (win, fore, font, x+len, y+1, &glyph_index, 1);
+		XftDrawGlyphs (win, fore, xftfont, x, y, &glyph_index, 1);
+
+		x = x + r->TermWin.xftmsize;
+		//if (x >= r->vts[page]->tab_width)
+		//y = y + r->TermWin.xftmsize;
+
+	 } 
+
+	 XftFontClose (dpy, xftfont);
+	 }
 }
 #undef XFTDRAW_STRING
 #endif	/* XFT_SUPPORT */
@@ -3026,6 +3085,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	    fillback = 1;
 	case	XFT_DRAW_STRING_8:
 	    xftdraw_string = XftDrawString8; break;
+	    //xftdraw_string = XftDrawString16; break;
 
 	case	XFT_DRAW_IMAGE_STRING_16:
 	    fillback = 1;

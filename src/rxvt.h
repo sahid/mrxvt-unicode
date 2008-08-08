@@ -1491,7 +1491,8 @@ enum {
  * VARIABLES
  *****************************************************************************
  */
-struct rxvt_hidden {
+struct rxvt_hidden
+{
     unsigned char   BOOLVAR( want_clip_refresh, 1),	/* Only refresh region
 							   specified by
 							   refreshRegion */

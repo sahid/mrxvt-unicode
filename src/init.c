@@ -633,6 +633,12 @@ rxvt_getdtablesize(void)
 
 
 /* EXTPROTO */
+/* This initialization function sets all variable in the mrxvt structure
+ * to their "neutral" value.
+ * It is run by rxvt_init and returns 0
+ * (no failure possible unless the memory allocation for mrxvt structure has failed
+ * in rxvt_init).
+ */
 int
 rxvt_init_vars(rxvt_t *r)
 {
@@ -2913,6 +2919,11 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
     PVTS(r, page)->cmdbuf_ptr	= PVTS(r, page)->cmdbuf_endp
 				= PVTS(r, page)->cmdbuf_base;
     
+	 /* Initialize input buffer (new version with glyph index); */
+    PVTS(r, page)->glyphbuf_ptr	= PVTS(r, page)->glyphbuf_end
+				= PVTS(r, page)->glyphbuf;
+    
+
     /* Initialize write out buffer */
     SET_NULL(PVTS(r, page)->v_buffer);
     SET_NULL(PVTS(r, page)->v_bufstr);

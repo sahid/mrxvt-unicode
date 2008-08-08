@@ -73,7 +73,8 @@ typedef unsigned char text_t;
  *  view_start: 0 <= view_start <= nscrolled
  */
 
-typedef struct {
+typedef struct
+{
     uint16_t	    fwidth,	/* font width  [pixels] */
 		    fheight;	/* font height [pixels] */
 #ifdef XFT_SUPPORT
@@ -203,7 +204,8 @@ typedef struct {
  *   Rows [TermWin.saveLines] ... [TermWin.saveLines + TermWin.nrow - 1]
  *     normal `unscrolled' screen region
  */
-typedef struct {
+typedef struct
+{
     text_t**	    text;	/* _all_ the text */
     int16_t*	    tlen;	/* length of each text line */
     rend_t**	    rend;	/* rendition, uses RS_ flags */
@@ -567,7 +569,8 @@ typedef enum {
 } termenv_t;
 
 struct term_t;
-typedef struct {
+typedef struct
+{
     /*
      * Index to vts. If it's -1, then this term_t structure is not used.
      * Otherwise, it is used by pointer vts[vts_idx]. This is to improve destroy
@@ -752,6 +755,10 @@ typedef struct {
 		    *cmdbuf_ptr,	/* current char */
 		    *cmdbuf_endp;	/* End of read child's output */
     unsigned char   cmdbuf_base[BUFSIZ];
+
+	 FT_UInt *glyphbuf_ptr, /* Current glyph to draw */
+				*glyphbuf_end;
+	FT_UInt glyphbuf[BUFSIZ];
 } term_t;
 
 #define TAB_MON_OFF 0            /* tab monitoring off */
@@ -861,7 +868,8 @@ typedef struct _profile_t
 } profile_t;
 
 
-typedef struct rxvt_vars {
+typedef struct rxvt_vars
+{
     /*
      * These ``hidden'' items are not for public consumption and must not be
      * accessed externally
@@ -919,6 +927,9 @@ typedef struct rxvt_vars {
 		    *xftColorsUnfocus;
 # endif
 
+	FT_Library* ft_library;
+	FT_Face* ft_face;
+	FT_Error* ft_error;
 
     profile_t	    profile[MAX_PROFILES];
 

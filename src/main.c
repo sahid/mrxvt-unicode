@@ -138,6 +138,11 @@ rxvt_pre_show_init( rxvt_t *r )
 
 /* rxvt_init() */
 /* LIBPROTO */
+/* The main initialization function called from main ().
+ * If it fails, it will return NULL (hence mrxvt will stop with failure).
+ * Hence it will return the mrxvt structure (rxvt_t) which keeps the status of mrxvt
+ * during the whole runtime.
+ */
 rxvt_t		*
 rxvt_init(int argc, const char *const *argv)
 {
@@ -232,6 +237,8 @@ rxvt_init(int argc, const char *const *argv)
 
     /* Initialize xlocale after VT is created */
     rxvt_init_xlocale(r);
+
+	// TODO: here I will initialize, FT_Face stuffs.
 
     return r;
 }
