@@ -2783,7 +2783,12 @@ rxvt_cmd_get_glyph (rxvt_t *r, int* p_page)
 	 * pending in our input buffer.
 	 */
 	if( selpage != -1 && rxvt_cmdbuf_has_input(r, selpage) )
+	{
+		 wchar_t* wc = malloc (sizeof (wchar_t));
+		 mbtowc (wc, PVTS(r, selpage)->cmdbuf_ptr, 4); // here make a min (4, size of input)
+		//glyph_index = XftCharIndex (dpy, xftfont, FcChar32 (*wc)); // Then I must return this index instead of a char!
 	    return *(PVTS(r, selpage)->cmdbuf_ptr)++;
+	}
 
 	if( selpage == -1 && -1 != (retpage = rxvt_find_cmd_child (r)) )
 	{

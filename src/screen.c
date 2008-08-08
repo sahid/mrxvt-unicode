@@ -2935,11 +2935,14 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 	 for (i = 0; i < len; i++)
 	 {
 		 //FT_ULong fu = ((FT_ULong) (str[i])) & 0xff;
-		 FcChar32 fc = ((FcChar32) (str[i])) & 0xff;
+		 FcChar32* fc = malloc (sizeof (FcChar32));// FcChar32 fc = ((FcChar32) (str[i])) & 0xff;
+		 wchar_t* wc = malloc (sizeof (wchar_t));
+		 mbtowc (wc, str++, 1);
+		 fc = (FcChar32*) wc;
 
 		//glyph_index = FT_Get_Char_Index( face, fu);
 		//glyph_index = XftCharIndex (dpy, xftfont, FCchar32);
-		glyph_index = XftCharIndex (dpy, xftfont, fc);
+		glyph_index = XftCharIndex (dpy, xftfont, *fc);
 		//XftDrawGlyphs (win, fore, font, x+len, y+1, &glyph_index, 1);
 		XftDrawGlyphs (win, fore, xftfont, x, y, &glyph_index, 1);
 
