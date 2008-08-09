@@ -20,6 +20,7 @@
  *				<johann@myrkraverk.com>
  * Copyright (c) 2004-2006   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1750,84 +1751,88 @@ rxvt_check_cmdbuf (rxvt_t* r, int page)
 
 /*
  * This function returns the number of bytes being read from a child
+ * - r is the mrxvt state;
+ * - page is the tab number you want to read the child output from;
+ * - count is the maximum number of bytes you want to read.
  */
 /* INTPROTO */
 int
 rxvt_read_child_cmdfd (rxvt_t* r, int page, unsigned int count)
 {
-    int		    n = 0, bread = 0;
-    struct	    timeval  tp;
+	int		    n = 0, bread = 0;
+	struct	    timeval  tp;
 
-    while( count )
-    {
-	int readErrno;
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_read_child_cmdfd tries and read at most %u bytes from %i.\n", count, page));
 
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "read maximal %u bytes\n", count));
-
-	/*
-	 * 2006-08-23 gi1242: O_NDELAY is set here, so we need not worry about
-	 * calls to read() blocking.
-	 */
-	errno = PVTS(r, page)->gotEIO = 0;
-	n = read( PVTS(r, page)->cmd_fd, PVTS(r, page)->cmdbuf_endp, count );
-	readErrno = errno;
-
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "read %d bytes\n", n));
-
-	if (n > 0)
+	while( count )
 	{
-	    /* Update count and buffer pointer */
-	    count -= n;
-	    bread += n;
-	    PVTS(r, page)->cmdbuf_endp += n;
+		int readErrno;
+
+		/*
+		 * 2006-08-23 gi1242: O_NDELAY is set here, so we need not worry about
+		 * calls to read() blocking.
+		 */
+		errno = PVTS(r, page)->gotEIO = 0;
+		n = read( PVTS(r, page)->cmd_fd, PVTS(r, page)->cmdbuf_endp, count );
+		readErrno = errno;
+
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t%d bytes read.\n", n));
+
+		if (n > 0)
+		{
+			/* Update count and buffer pointer */
+			count -= n;
+			bread += n;
+			PVTS(r, page)->cmdbuf_endp += n;
+		}
+		else if (0 == n)
+		{
+			/* rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Should not happen?\n")); */
+			/* 2006-08-23 gi1242: Could happen if we have no more data. */
+			break;
+		}
+		else /* if (n < 0) */
+		{
+			/*
+			 * We do not update count and buffer pointer and continue
+			 * trying read more data in the next loop iteration.
+			 */
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tStop reading on error '%s'.\n", strerror(readErrno)));
+
+			assert( readErrno != EBADF && readErrno != EFAULT &&
+					readErrno != EISDIR );
+
+			/* See if this process is dead */
+			switch (readErrno)
+			{
+				case EIO:
+					r->gotEIO = PVTS(r, page)->gotEIO = 1;
+				case EINTR:
+					rxvt_mark_dead_childs(r);
+					break;
+			}
+
+			/*
+			 * 2006-08-31 gi1242: Old code would only break out on EAGAIN or
+			 * EINVAL.
+			 */
+			break;
+		}
+	}	/* while (count) */
+
+	if (bread != 0)
+	{
+	 // TODO: this whole conditional structure is useful (is it really?) only for debugging...
+	 // Shouldn't it be excluded through a #ifdef DEBUG ?
+
+		gettimeofday( &tp, NULL);
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+					"Output (%i bytes) produced on epoch %i.\n", bread, tp.tv_sec));
 	}
 
-	else if (0 == n)
-	{
-	    /* rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Should not happen?\n")); */
-	    /* 2006-08-23 gi1242: Could happen if we have no more data. */
-	    break;
-	}
-
-	else /* if (n < 0) */
-	{
-	    /*
-	     * We do not update count and buffer pointer and continue
-	     * trying read more data in the next loop iteration.
-	     */
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "%s\n", strerror(readErrno)));
-
-	    assert( readErrno != EBADF && readErrno != EFAULT &&
-		    readErrno != EISDIR );
-
-	    /* See if this process is dead */
-	    switch (readErrno)
-	    {
-		case EIO:
-		    r->gotEIO = PVTS(r, page)->gotEIO = 1;
-		case EINTR:
-		    rxvt_mark_dead_childs(r);
-		    break;
-	    }
-
-	    /*
-	     * 2006-08-31 gi1242: Old code would only break out on EAGAIN or
-	     * EINVAL.
-	     */
-	    break;
-
-	}
-    }	/* while (count) */
-
-    if (bread != 0)
-    {
-	gettimeofday( &tp, NULL);
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
-		    "output produced on epoch %i\n", tp.tv_sec));
-    }
-    PVTS(r, page)->monitor_nbytes_read += bread;
-    PVTS(r, page)->nbytes_last_read = bread;
-    return bread;
+	PVTS(r, page)->monitor_nbytes_read += bread;
+	PVTS(r, page)->nbytes_last_read = bread;
+	return bread;
 }
 
 /* INTPROTO */
@@ -1970,55 +1975,63 @@ rxvt_monitor_tab(rxvt_t* r,int i)
 void
 rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
 {
-    /*
-     * Handle the children that have generate input. Notice in this loop we only
-     * process input, but do NOT determine the child we want to return.
-     */
-    register int    i;
+	/*
+	 * Handle the children that have generate input. Notice in this loop we only
+	 * process input, but do NOT determine the child we want to return.
+	 */
+	register int    i;
 
-    for (i = 0; i <= LTAB(r); i++)
-    {
-	unsigned int	count, bufsiz;
-
-	/* check for activity */
-        rxvt_monitor_tab(r,i);
-
-	/* check next file descriptor if this one has nothing to read in. */
-	if (!FD_ISSET(PVTS(r, i)->cmd_fd, p_readfds))
+	for (i = 0; i <= LTAB(r); i++)
 	{
-	    PVTS(r, i)->nbytes_last_read = 0;
-	    PVTS(r, i)->scrolled_lines	 = 0;
-	    continue;
-	}
+		unsigned int	count, bufsiz, countwc;
+		// count is the number of bytes that can be read (remaining place in buffer).
+		// countwc is the actual number of character read.
 
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "reading from shell %d\n", i));
+		/* check for activity */
+		rxvt_monitor_tab(r,i);
 
-	/* check our command buffer before reading data */
-	rxvt_check_cmdbuf( r, i );
+		/* check next file descriptor if this one has nothing to read in. */
+		if (!FD_ISSET(PVTS(r, i)->cmd_fd, p_readfds))
+		{
+			PVTS(r, i)->nbytes_last_read = 0;
+			PVTS(r, i)->scrolled_lines	 = 0;
+			continue;
+		}
 
-	/* The buffer size is the buffer length - used length */
-	count = bufsiz = (BUFSIZ - 1) -
-	    (PVTS(r, i)->cmdbuf_endp - PVTS(r, i)->cmdbuf_base);
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "reading from shell %d\n", i));
 
-	/* read data from the command fd into buffer */
-	count -= rxvt_read_child_cmdfd (r, i, count);
+		/* check our command buffer before reading data */
+		rxvt_check_cmdbuf( r, i );
+
+		/* The buffer size is the buffer length - used length */
+		count = bufsiz = (BUFSIZ - 1) -
+			(PVTS(r, i)->cmdbuf_endp - PVTS(r, i)->cmdbuf_base);
+
+		/* read data from the command fd into buffer */
+		count -= rxvt_read_child_cmdfd (r, i, count);
+		// TODO: now I should transform the char output into meaningful wchar_t!
+		// TODO: shouldn't I change rxvt_read_child_cmdfd so that it ends the buffer with \0?
+		countwc = mbstowcs (PVTS(r, i)->charbuf_end, (char*) PVTS(r, i)->cmdbuf_ptr, count);
+		if (countwc == -1) // what do we do in such case? Do we just dump this part of output?
+			//What if the first char is OK, but not the second? Does it return 1 or -1?
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered in tab %d.\n", i));
 
 #if 0
-	/* check if a child died */
-	if( PVTS(r, i)->dead && errno == EIO )
-	    *PVTS(r, i)->cmdbuf_endp = (char) 0;
+		/* check if a child died */
+		if( PVTS(r, i)->dead && errno == EIO )
+			*PVTS(r, i)->cmdbuf_endp = (char) 0;
 #endif
 
-	/* highlight inactive tab if there is some input */
-	if(
-	     NOTSET_OPTION(r, Opt2_hlTabOnBell)	    &&
-	     bufsiz != count			    &&
-	     i != ATAB(r)
-	   )
-	{
-	    rxvt_tabbar_highlight_tab (r, i, False);
-	}
-    }   /* for loop */
+		/* highlight inactive tab if there is some input */
+		if(
+				NOTSET_OPTION(r, Opt2_hlTabOnBell)	    &&
+				bufsiz != count			    &&
+				i != ATAB(r)
+		  )
+		{
+			rxvt_tabbar_highlight_tab (r, i, False);
+		}
+	}   /* for loop */
 }
 
 
@@ -2672,7 +2685,7 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
  */
 
 /* INTPROTO */
-unsigned char // glyph_index
+unsigned char //wchar_t // glyph_index
 rxvt_cmd_get_glyph (rxvt_t *r, int* p_page)
 {
     int		    selpage = *p_page, retpage;
@@ -2694,11 +2707,11 @@ rxvt_cmd_get_glyph (rxvt_t *r, int* p_page)
     rxvt_dbgmsg ((DBG_VERBOSE, DBG_COMMAND,  "Entering rxvt_cmd_get_glyph on page %d\n", *p_page));
 
     /* loop until we can return something */
-   for(;;)
+	for(;;)
 	{
 	/* check for inactivity */
 		for (i = 0; i <= LTAB(r); i ++)
-	    rxvt_monitor_tab(r,i);
+			rxvt_monitor_tab(r,i);
 
 #if defined(POINTER_BLANK) || defined(CURSOR_BLINK) || defined(TRANSPARENT)
 	/* presume == 0 implies time not yet retrieved */
@@ -2714,94 +2727,94 @@ rxvt_cmd_get_glyph (rxvt_t *r, int* p_page)
 
 		if( selpage == -1 )
 		{
-			 /* Process all pending X events */
-			 while( XPending(r->Xdisplay) )
-			 {
-			XEvent	  xev;
-			XNextEvent(r->Xdisplay, &xev);
+			/* Process all pending X events */
+			while( XPending(r->Xdisplay) )
+			{
+				XEvent	  xev;
+				XNextEvent(r->Xdisplay, &xev);
 
 #ifdef CURSOR_BLINK
-			if (ISSET_OPTION(r, Opt_cursorBlink) &&
-				 KeyPress == xev.type)
-			{
-				 if (h->hidden_cursor)
-				 {
-				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** hide cursor on keypress\n"));
-				h->hidden_cursor = 0;
-				AVTS(r)->want_refresh = 1;
-				 }
-				 want_keypress_time = 1;
-			}
+				if (ISSET_OPTION(r, Opt_cursorBlink) &&
+						KeyPress == xev.type)
+				{
+					if (h->hidden_cursor)
+					{
+						rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** hide cursor on keypress\n"));
+						h->hidden_cursor = 0;
+						AVTS(r)->want_refresh = 1;
+					}
+					want_keypress_time = 1;
+				}
 #endif	/* CURSOR_BLINK */
 
 #ifdef POINTER_BLANK
-			if (ISSET_OPTION(r, Opt_pointerBlank) &&
-				 (h->pointerBlankDelay > 0))
-			{
-				 if (MotionNotify == xev.type ||
-				ButtonPress == xev.type ||
-				ButtonRelease == xev.type )
-				 {
-				/* only work for current active tab */
-				if (AVTS(r)->hidden_pointer)
-					 rxvt_pointer_unblank(r, ATAB(r));
-				want_motion_time = 1;
-				 }
-				 /* only work for current active tab */
-				 if (KeyPress == xev.type && !AVTS(r)->hidden_pointer)
-				rxvt_pointer_blank(r, ATAB(r));
-			}
+				if (ISSET_OPTION(r, Opt_pointerBlank) &&
+						(h->pointerBlankDelay > 0))
+				{
+					if (MotionNotify == xev.type ||
+							ButtonPress == xev.type ||
+							ButtonRelease == xev.type )
+					{
+						/* only work for current active tab */
+						if (AVTS(r)->hidden_pointer)
+							rxvt_pointer_unblank(r, ATAB(r));
+						want_motion_time = 1;
+					}
+					/* only work for current active tab */
+					if (KeyPress == xev.type && !AVTS(r)->hidden_pointer)
+						rxvt_pointer_blank(r, ATAB(r));
+				}
 #endif	/* POINTER_BLANK */
 
-			if (NOT_NULL(r->h->Input_Context))
-			{
-				 if (!XFilterEvent(&xev, xev.xany.window))
-				rxvt_process_x_event(r, &xev);
-				 h->event_type = xev.type;
-			}
-			else
-			{
-				 rxvt_process_x_event(r, &xev);
-			}
-		}   /* while ((XPending(r->Xdisplay)) */
-	} /* if( selpage == -1 ) */
-	else if( !PVTS(r, selpage)->dead && XPending( r->Xdisplay ) )
-	{
-	    /*
-	     * selpage != -1 on an alive tab, and X events are pending. If this
-	     * tab produces lots of output, it could potentially choke
-	     * everything else. Thus we return a failure, so the caller will
-	     * rxvt_set_escfail() and fall back to rxvt_main_loop(). We will be
-	     * called again with selpage == -1, when we can process X events.
-	     */
-	    *p_page = -1;
-	    return 0;
-	}
+				if (NOT_NULL(r->h->Input_Context))
+				{
+					if (!XFilterEvent(&xev, xev.xany.window))
+						rxvt_process_x_event(r, &xev);
+					h->event_type = xev.type;
+				}
+				else
+				{
+					rxvt_process_x_event(r, &xev);
+				}
+			}   /* while ((XPending(r->Xdisplay)) */
+		} /* if( selpage == -1 ) */
+		else if( !PVTS(r, selpage)->dead && XPending( r->Xdisplay ) )
+		{
+			/*
+			 * selpage != -1 on an alive tab, and X events are pending. If this
+			 * tab produces lots of output, it could potentially choke
+			 * everything else. Thus we return a failure, so the caller will
+			 * rxvt_set_escfail() and fall back to rxvt_main_loop(). We will be
+			 * called again with selpage == -1, when we can process X events.
+			 */
+			*p_page = -1;
+			return 0;
+		}
 
 	/*
 	 * We are done processing our X events. Check to see if we have any data
 	 * pending in our input buffer.
 	 */
-	if( selpage != -1 && rxvt_cmdbuf_has_input(r, selpage) )
-	{
-		 wchar_t* wc = malloc (sizeof (wchar_t));
-		 mbtowc (wc, PVTS(r, selpage)->cmdbuf_ptr, 4); // here make a min (4, size of input)
-		//glyph_index = XftCharIndex (dpy, xftfont, FcChar32 (*wc)); // Then I must return this index instead of a char!
-	    return *(PVTS(r, selpage)->cmdbuf_ptr)++;
-	}
+		if( selpage != -1 && rxvt_cmdbuf_has_input(r, selpage) )
+		{
+			wchar_t* wc = malloc (sizeof (wchar_t));
+			mbtowc (wc, PVTS(r, selpage)->cmdbuf_ptr, 4); // here make a min (4, size of input)
+			//glyph_index = XftCharIndex (dpy, xftfont, FcChar32 (*wc)); // Then I must return this index instead of a char!
+			return *(PVTS(r, selpage)->cmdbuf_ptr)++;
+		}
 
-	if( selpage == -1 && -1 != (retpage = rxvt_find_cmd_child (r)) )
-	{
-	    /*
-	     * In case -1 == selpage we are free to return data from any tab we
-	     * choose. Note, that rxvt_find_cmd_child() will favor returning the
-	     * active tab.
-	     */
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_find_cmd_child: find %d\n", retpage));
+		if( selpage == -1 && -1 != (retpage = rxvt_find_cmd_child (r)) )
+		{
+			/*
+			 * In case -1 == selpage we are free to return data from any tab we
+			 * choose. Note, that rxvt_find_cmd_child() will favor returning the
+			 * active tab.
+			 */
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_find_cmd_child: find %d\n", retpage));
 
-	    *p_page = retpage;
-	    return *(PVTS(r, *p_page)->cmdbuf_ptr)++;
-	}
+			*p_page = retpage;
+			return *(PVTS(r, *p_page)->cmdbuf_ptr)++;
+		}
 
 
 	/*
@@ -2809,237 +2822,236 @@ rxvt_cmd_get_glyph (rxvt_t *r, int* p_page)
 	 * We call select() to wait until some data is available.
 	 */
 #ifdef CURSOR_BLINK
-	if (want_keypress_time)
-	{
-	    /* reset last cursor change time on keypress event */
-	    (void) gettimeofday (&tp, NULL);
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** init cursor time on keypress\n"));
-	    h->lastcursorchange.tv_sec = tp.tv_sec;
-	    h->lastcursorchange.tv_usec = tp.tv_usec;
-	}
+		if (want_keypress_time)
+		{
+			/* reset last cursor change time on keypress event */
+			(void) gettimeofday (&tp, NULL);
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** init cursor time on keypress\n"));
+			h->lastcursorchange.tv_sec = tp.tv_sec;
+			h->lastcursorchange.tv_usec = tp.tv_usec;
+		}
 #endif	/* CURSOR_BLINK */
 
 #ifdef POINTER_BLANK
-	if (ISSET_OPTION(r, Opt_pointerBlank) && want_motion_time)
-	{
-	    (void) gettimeofday (&tp, NULL);
-	    h->lastmotion.tv_sec = tp.tv_sec;
-	    h->lastmotion.tv_usec = tp.tv_usec;
-	}
+		if (ISSET_OPTION(r, Opt_pointerBlank) && want_motion_time)
+		{
+			(void) gettimeofday (&tp, NULL);
+			h->lastmotion.tv_sec = tp.tv_sec;
+			h->lastmotion.tv_usec = tp.tv_usec;
+		}
 #endif	/* POINTER_BLANK */
 
-	quick_timeout = rxvt_check_quick_timeout (r);
-	quick_timeout = rxvt_adjust_quick_timeout (r, quick_timeout, &value);
+		quick_timeout = rxvt_check_quick_timeout (r);
+		quick_timeout = rxvt_adjust_quick_timeout (r, quick_timeout, &value);
 
-	/* Now begin to read in from children's file descriptors */
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Waiting for %lumu for child\n", 
-		      quick_timeout ? value.tv_sec * 1000000LU + value.tv_usec : ULONG_MAX));
+		/* Now begin to read in from children's file descriptors */
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Waiting for %lumu for child\n", 
+					quick_timeout ? value.tv_sec * 1000000LU + value.tv_usec : ULONG_MAX));
 
 
 	/* Prepare to read in from children's file descriptors */
-	FD_ZERO(&readfds);
-	FD_SET(r->Xfd, &readfds);
+		FD_ZERO(&readfds);
+		FD_SET(r->Xfd, &readfds);
 
-	for (i = 0; i <= LTAB(r); i ++)
-	{
-	    /* remember to skip held childrens */
-	    if ( PVTS(r, i)->hold > 1 )
-	    {
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
-			    " not listening on vt[%d].cmd_fd (dead)\n", i));
-		continue;
-	    }
-	    else if ( PVTS(r, i)->gotEIO )
-	    {
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
-			    " not listening on vt[%d].cmd_fd (EIO)\n", i));
-		PVTS(r, i)->gotEIO = 0;
-		continue;
-	    }
+		for (i = 0; i <= LTAB(r); i ++)
+		{
+			/* remember to skip held childrens */
+			if ( PVTS(r, i)->hold > 1 )
+			{
+				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+							" not listening on vt[%d].cmd_fd (dead)\n", i));
+				continue;
+			}
+			else if ( PVTS(r, i)->gotEIO )
+			{
+				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+							" not listening on vt[%d].cmd_fd (EIO)\n", i));
+				PVTS(r, i)->gotEIO = 0;
+				continue;
+			}
 
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
-			" listening on vt[%d].cmd_fd = %d\n",
-			i, PVTS(r, i)->cmd_fd));
-	    FD_SET(PVTS(r, i)->cmd_fd, &readfds);
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+						" listening on vt[%d].cmd_fd = %d\n",
+						i, PVTS(r, i)->cmd_fd));
+			FD_SET(PVTS(r, i)->cmd_fd, &readfds);
 
-	    /* Write out any pending output to child */
-	    if( PVTS(r, i)->v_bufstr < PVTS(r, i)->v_bufptr )
-		rxvt_tt_write(r, i, NULL, 0);
-	}
+			/* Write out any pending output to child */
+			if( PVTS(r, i)->v_bufstr < PVTS(r, i)->v_bufptr )
+				rxvt_tt_write(r, i, NULL, 0);
+		}
 
 #ifdef HAVE_X11_SM_SMLIB_H
-	if (-1 != r->TermWin.ice_fd)
-	    FD_SET(r->TermWin.ice_fd, &readfds);
+		if (-1 != r->TermWin.ice_fd)
+			FD_SET(r->TermWin.ice_fd, &readfds);
 #endif
 
 #ifdef USE_FIFO
-	if( r->fifo_fd != -1 )
-	    FD_SET( r->fifo_fd, &readfds );
+		if( r->fifo_fd != -1 )
+			FD_SET( r->fifo_fd, &readfds );
 #endif
 
-	rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
-		    "Calling select( num_fds=%d, timeout=%06du, &readfds)",
-		    r->num_fds,
-		    quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1
-		    ));
-	select_res = select( r->num_fds, &readfds, NULL, NULL,
-			(quick_timeout ? &value : NULL) );
-	rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
-		    "done (timeout %06du). Return %d\n",
-		    quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1,
-		    select_res ));
-
-	if( select_res > 0 )
-	{
-	    /* Select succeeded. Check if we have new Xevents first. */
-	    if( 0 && selpage == -1 && XPending( r->Xdisplay ) > 25)
-	    {
 		rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
-			"%d xevents to processes. Continuing\n",
-			XPending( r->Xdisplay ) ));
-		continue;
-	    }
+					"Calling select( num_fds=%d, timeout=%06du, &readfds)",
+					r->num_fds,
+					quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1
+					));
+		select_res = select( r->num_fds, &readfds, NULL, NULL,
+				(quick_timeout ? &value : NULL) );
+		rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
+					"done (timeout %06du). Return %d\n",
+					quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1,
+					select_res ));
 
-	    /* Read whatever input we can from child fd's*/
-	    rxvt_process_children_cmdfd (r, &readfds);
+		if( select_res > 0 )
+		{
+			/* Select succeeded. Check if we have new Xevents first. */
+			if( 0 && selpage == -1 && XPending( r->Xdisplay ) > 25)
+			{
+				rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
+							"%d xevents to processes. Continuing\n",
+							XPending( r->Xdisplay ) ));
+				continue;
+			}
+
+			/* Read whatever input we can from child fd's*/
+			rxvt_process_children_cmdfd (r, &readfds);
 
 #ifdef HAVE_X11_SM_SMLIB_H
-	    /*
-	     * ICE file descriptor must be processed after we process all file
-	     * descriptors of children. Otherwise, if a child exit,
-	     * IceProcessMessages may hang and make the entire terminal
-	     * unresponsive.
-	     */
-	    if(
-		 -1 != r->TermWin.ice_fd &&
-		 FD_ISSET (r->TermWin.ice_fd, &readfds)
-	      )
-		rxvt_process_ice_msgs (r);
+			/*
+			 * ICE file descriptor must be processed after we process all file
+			 * descriptors of children. Otherwise, if a child exit,
+			 * IceProcessMessages may hang and make the entire terminal
+			 * unresponsive.
+			 */
+			if(
+					-1 != r->TermWin.ice_fd &&
+					FD_ISSET (r->TermWin.ice_fd, &readfds)
+			  )
+				rxvt_process_ice_msgs (r);
 #endif
 
 #ifdef USE_FIFO /* {{{ Execute macros read from the fifo */
-	    if( -1 != r->fifo_fd  && FD_ISSET(r->fifo_fd, &readfds))
-	    {
-		ssize_t	len;
-		int	nbytes;
-
-		nbytes = sizeof(r->fifo_buf) - (r->fbuf_ptr - r->fifo_buf) - 1;
-		assert( nbytes > 0 );
-		
-		errno = 0;
-		len = read( r->fifo_fd, r->fbuf_ptr, nbytes );
-		
-		if( errno )
-		{
-		    rxvt_msg (DBG_ERROR, DBG_COMMAND, "Error: reading fifo %s", strerror (errno));
-		}
-
-		if( len == 0 )
-		{
-		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Reopening fifo %s\n", r->fifo_name ));
-		    close( r->fifo_fd );
-		    r->fifo_fd = open( r->fifo_name, O_RDONLY|O_NDELAY );
-		    rxvt_adjust_fd_number( r );
-
-		    /* Flush the fifo buffer */
-		    r->fbuf_ptr = r->fifo_buf;
-		}
-
-		else if( len > 0 )
-		{
-		    char	astr[FIFO_BUF_SIZE];
-		    char	*fptr = r->fifo_buf,
-				*aptr;
-		    action_t    action;
-
-		    SET_NULL( action.str );
-
-		    r->fbuf_ptr += len;	    /* Point to end of fifo_buf */
-
-		    for(;;)
-		    {
-			aptr = astr;
-			while( fptr < r->fbuf_ptr && *fptr && *fptr != '\n' )
-			    *(aptr++) = *(fptr++);
-
-			if( fptr < r->fbuf_ptr && *fptr == '\n' )
+			if( -1 != r->fifo_fd  && FD_ISSET(r->fifo_fd, &readfds))
 			{
-			    /* Got complete action. Execute it */
-			    *aptr = 0;
-			    if( rxvt_set_action( &action, astr ) )
-				rxvt_dispatch_action( r, &action, NULL );
+				ssize_t	len;
+				int	nbytes;
 
-			    fptr++; /* Advance to next char */
+				nbytes = sizeof(r->fifo_buf) - (r->fbuf_ptr - r->fifo_buf) - 1;
+				assert( nbytes > 0 );
+
+				errno = 0;
+				len = read( r->fifo_fd, r->fbuf_ptr, nbytes );
+
+				if( errno )
+				{
+					rxvt_msg (DBG_ERROR, DBG_COMMAND, "Error: reading fifo %s", strerror (errno));
+				}
+
+				if( len == 0 )
+				{
+					rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Reopening fifo %s\n", r->fifo_name ));
+					close( r->fifo_fd );
+					r->fifo_fd = open( r->fifo_name, O_RDONLY|O_NDELAY );
+					rxvt_adjust_fd_number( r );
+
+					/* Flush the fifo buffer */
+					r->fbuf_ptr = r->fifo_buf;
+				}
+
+				else if( len > 0 )
+				{
+					char	astr[FIFO_BUF_SIZE];
+					char	*fptr = r->fifo_buf,
+							*aptr;
+					action_t    action;
+
+					SET_NULL( action.str );
+
+					r->fbuf_ptr += len;	    /* Point to end of fifo_buf */
+
+					for(;;)
+					{
+						aptr = astr;
+						while( fptr < r->fbuf_ptr && *fptr && *fptr != '\n' )
+							*(aptr++) = *(fptr++);
+
+						if( fptr < r->fbuf_ptr && *fptr == '\n' )
+						{
+							/* Got complete action. Execute it */
+							*aptr = 0;
+							if( rxvt_set_action( &action, astr ) )
+								rxvt_dispatch_action( r, &action, NULL );
+
+							fptr++; /* Advance to next char */
+						}
+
+						else
+						{
+							/*
+							 * Incomplete action. Copy it to the fifo buffer and
+							 * break out
+							 */
+							MEMCPY( r->fifo_buf, astr, aptr - astr );
+							r->fbuf_ptr = r->fifo_buf + (aptr - astr);
+							break;
+						}
+
+					}
+
+					rxvt_free( action.str );
+				}
 			}
-
-			else
-			{
-			    /*
-			     * Incomplete action. Copy it to the fifo buffer and
-			     * break out
-			     */
-			    MEMCPY( r->fifo_buf, astr, aptr - astr );
-			    r->fbuf_ptr = r->fifo_buf + (aptr - astr);
-			    break;
-			}
-
-		    }
-
-		    rxvt_free( action.str );
-		}
-	    }
 #endif/*USE_FIFO}}}*/
 
-	    /*
-	     * Now figure out if we have something to return.
-	     */
-	    if( selpage != -1 && rxvt_cmdbuf_has_input(r, selpage) )
-		return *(PVTS(r, selpage)->cmdbuf_ptr)++;
+			/*
+			 * Now figure out if we have something to return.
+			 */
+			if( selpage != -1 && rxvt_cmdbuf_has_input(r, selpage) )
+				return *(PVTS(r, selpage)->cmdbuf_ptr)++;
 
-	    /* No input from specified child. Try others. */
-	    else if( (retpage = rxvt_find_cmd_child (r)) != -1 )
-	    {
-		if( selpage != -1 && selpage != retpage )
-		{
-		    /*
-		     * Specified child has nothing to return, but some other
-		     * child has data to return. We set retpage = -1, and return
-		     * 0.
-		     */
-		    *p_page = -1;
-		    return '\0';
-		}
-
-		else
-		{
-		    /* No child specified, and we have input from some child */
-		    *p_page = retpage;
-		    return *(PVTS(r, retpage)->cmdbuf_ptr)++;
-		}
-	    } /* else if( (retpage = rxvt_find_cmd_child (r)) != -1 ) */
-	} /* if( select_res >= 0 ) */
+			/* No input from specified child. Try others. */
+			else if( (retpage = rxvt_find_cmd_child (r)) != -1 )
+			{
+				if( selpage != -1 && selpage != retpage )
+				{
+					/*
+					 * Specified child has nothing to return, but some other
+					 * child has data to return. We set retpage = -1, and return
+					 * 0.
+					 */
+					*p_page = -1;
+					return '\0';
+				}
+				else
+				{
+					/* No child specified, and we have input from some child */
+					*p_page = retpage;
+					return *(PVTS(r, retpage)->cmdbuf_ptr)++;
+				}
+			} /* else if( (retpage = rxvt_find_cmd_child (r)) != -1 ) */
+		} /* if( select_res >= 0 ) */
 
 	/*
 	 * If we get here, we either have a select() error, or no tabs had any
 	 * input. Check to see if something died.
 	 */
-	if( r->ndead_childs || select_res == -1 )
-	    rxvt_mark_dead_childs( r );
+		if( r->ndead_childs || select_res == -1 )
+			rxvt_mark_dead_childs( r );
 
-	if( r->cleanDeadChilds )
-	{
-	    /* Ok. Something died. */
-	    *p_page = -1;
-	    return '\0';
-	} /* if( r->cleanDeadChilds ) */
+		if( r->cleanDeadChilds )
+		{
+			/* Ok. Something died. */
+			*p_page = -1;
+			return '\0';
+		} /* if( r->cleanDeadChilds ) */
 
 
 	/*
 	 * Nothing to return. Screen refresh, and call select() again.
 	 */
-	rxvt_refresh_vtscr_if_needed( r );
+		rxvt_refresh_vtscr_if_needed( r );
 
-    }	/* for(;;) */
+	}	/* for(;;) */
 
     /* NOT REACHED */
 }

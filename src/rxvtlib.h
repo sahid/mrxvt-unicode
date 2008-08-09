@@ -756,9 +756,14 @@ typedef struct
 		    *cmdbuf_endp;	/* End of read child's output */
     unsigned char   cmdbuf_base[BUFSIZ];
 
-	 FT_UInt *glyphbuf_ptr, /* Current glyph to draw */
-				*glyphbuf_end;
-	FT_UInt glyphbuf[BUFSIZ];
+	 //FT_UInt *glyphbuf_ptr, /* Current glyph to draw */
+	//			*glyphbuf_end;
+	//FT_UInt glyphbuf[BUFSIZ];
+	wchar_t *charbuf_escstart,
+			  *charbuf_escfail,
+			  *charbuf_start,
+			  *charbuf_end;
+	wchar_t	charbuf_base[BUFSIZ];
 } term_t;
 
 #define TAB_MON_OFF 0            /* tab monitoring off */
