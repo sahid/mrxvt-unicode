@@ -1984,6 +1984,7 @@ rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
 	for (i = 0; i <= LTAB(r); i++)
 	{
 		unsigned int	count, bufsiz, countwc;
+		char* byte_buffer = (char*) PVTS(r, i)->cmdbuf_ptr;
 		// count is the number of bytes that can be read (remaining place in buffer).
 		// countwc is the actual number of character read.
 
@@ -2011,10 +2012,49 @@ rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
 		count -= rxvt_read_child_cmdfd (r, i, count);
 		// TODO: now I should transform the char output into meaningful wchar_t!
 		// TODO: shouldn't I change rxvt_read_child_cmdfd so that it ends the buffer with \0?
-		countwc = mbstowcs (PVTS(r, i)->charbuf_end, (char*) PVTS(r, i)->cmdbuf_ptr, count);
-		if (countwc == -1) // what do we do in such case? Do we just dump this part of output?
-			//What if the first char is OK, but not the second? Does it return 1 or -1?
-			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered in tab %d.\n", i));
+		countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) &byte_buffer, count, NULL); // bufsiz - count?
+		if (countwc == -1)
+		{
+			if (errno == EILSEQ)
+			{
+				//An invalid multibyte sequence has been encountered.
+				//In this case *src is left pointing to the invalid multibyte sequence
+				// byte_buffer - PVTS(r, i)->cmdbuf_ptr char have been written.
+				// PVTS(r, i)->charbuf_end is updated TODO: check this behaviour.
+				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered and removed in tab %d.", i));
+				//It will be replaced by a unknown character.\n", i));
+
+				do
+				{
+					countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) byte_buffer, 1, NULL);
+				}
+				while (countwc == -1 && byte_buffer < (char *) PVTS(r, i)->cmdbuf_endp);
+			}
+			else // should not occure!
+			{
+				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "In rxvt_process_children_cmdfd, mbsrtowcs failed with errno = %i. This should not occure.\n", errno));
+				assert (0);
+			}
+			/* If the first char is OK, but not the second, it returns -1 anyway.
+			*  This is a bug from the child probably (bad support of locale encoding?),
+			*  but we are not going to dump all the output just for maybe one single byte!
+			*  So I search by dichotomy the broken byte and shall replace it by a "unknown" character in the output.
+			*/
+			/*int subcount = countwc;
+			while (countwc == -1)
+			{
+				subcount = (subcount - 1) / 2;
+				if (subcount == 0) // if we arrive here, then it was the first character which was wrong!
+				{
+					PVTS(r, i)->cmdbuf_ptr++; // I consume the wrong byte.
+					//PVTS(r, i)->charbuf_end = 0; // Here will have to set a char to tell "missing glyph"?!
+					// it is important here not to just dump the char but set something instead to warn there is an error.
+					break; // should I just break and come back some other time? Or process the rest now?
+					countwc = mbstowcs (PVTS(r, i)->charbuf_end, (char*) PVTS(r, i)->cmdbuf_ptr, subcount);
+				}
+			} // when we get out of this, then some output has been read!*/
+		}
+		else; // I could process data without error. Continue... 
 
 #if 0
 		/* check if a child died */
