@@ -2932,19 +2932,24 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 			if (error)
 					  printf ("Size\n");*/
 
-	 for (i = 0; i < len; i++)
+	 //for (i = 0; i < len; i++)
 	 {
+		 int lenglyphs;
 		 //FT_ULong fu = ((FT_ULong) (str[i])) & 0xff;
-		 FcChar32* fc = malloc (sizeof (FcChar32));// FcChar32 fc = ((FcChar32) (str[i])) & 0xff;
-		 wchar_t* wc = malloc (sizeof (wchar_t));
-		 mbtowc (wc, str++, 1);
+		 FcChar32* fc = malloc ((len+1) * sizeof (FcChar32));// FcChar32 fc = ((FcChar32) (str[i])) & 0xff;
+		 wchar_t* wc = malloc ((len+1) * sizeof (wchar_t));
+		 //mbtowc (wc, str++, 1);
+		 lenglyphs = mbsrtowcs (wc, (const char**) &str, len, NULL);
 		 fc = (FcChar32*) wc;
 
 		//glyph_index = FT_Get_Char_Index( face, fu);
 		//glyph_index = XftCharIndex (dpy, xftfont, FCchar32);
-		glyph_index = XftCharIndex (dpy, xftfont, *fc);
+		//for (i=0; i < lenglyphs; i++)
+		//glyph_index = XftCharIndex (dpy, xftfont, *fc);
 		//XftDrawGlyphs (win, fore, font, x+len, y+1, &glyph_index, 1);
-		XftDrawGlyphs (win, fore, xftfont, x, y, &glyph_index, 1);
+		//XftDrawGlyphs (win, fore, xftfont, x, y, &glyph_index, 1);
+		XftDrawString32 (win, fore, xftfont, x, y, fc, lenglyphs);
+		//XwcDrawString (win, fore, xftfont, x, y, fc, lenglyphs); -> for non xft!
 
 		x = x + r->TermWin.xftmsize;
 		//if (x >= r->vts[page]->tab_width)

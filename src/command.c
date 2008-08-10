@@ -1691,66 +1691,68 @@ rxvt_find_cmd_child (rxvt_t* r)
 
 
 /* INTPROTO */
+/* rxvt_check_cmdbuf (r, p) manage the free space in the buffer of the page p.
+ * It will move the used space in it to the beginning when needed.
+ */
 void
 rxvt_check_cmdbuf (rxvt_t* r, int page)
 {
-    assert( PVTS(r, page)->cmdbuf_base <= PVTS(r, page)->cmdbuf_endp );
+	assert( PVTS(r, page)->cmdbuf_base <= PVTS(r, page)->cmdbuf_endp );
 
-    if(
-	  IS_NULL( PVTS(r, page)->cmdbuf_escstart )		    &&
-	  PVTS(r, page)->cmdbuf_ptr == PVTS(r, page)->cmdbuf_endp
-      )
-    {
-	/*
-	 * If there is no data in the buffer, reset it to the beginning
-	 * of the buffer.
-	 */
-	PVTS(r, page)->cmdbuf_ptr   = PVTS(r, page)->cmdbuf_endp
-				    = PVTS(r, page)->cmdbuf_base;
+	if(
+			IS_NULL( PVTS(r, page)->cmdbuf_escstart )		    &&
+			PVTS(r, page)->cmdbuf_ptr == PVTS(r, page)->cmdbuf_endp
+	  )
+	{
+		/*
+		 * If there is no data in the buffer, reset it to the beginning
+		 * of the buffer.
+		 */
+		PVTS(r, page)->cmdbuf_ptr   = PVTS(r, page)->cmdbuf_endp
+			= PVTS(r, page)->cmdbuf_base;
 
-    }
+	}
+	else if(
+			(PVTS(r, page)->cmdbuf_endp - PVTS(r, page)->cmdbuf_base)
+			== (BUFSIZ-1)						 &&
+			(
+			 PVTS(r, page)->cmdbuf_escstart ?
+			 (PVTS(r, page)->cmdbuf_escstart > PVTS(r,page)->cmdbuf_base) :
+			 (PVTS(r, page)->cmdbuf_ptr > PVTS(r, page)->cmdbuf_base)
+			)
+			)
+	{
+		/*
+		 * If there is space at beginning of the buffer, but not space at the
+		 * end of the buffer, move the content of buffer forward to free space
+		 */
+		unsigned char	*start;
+		unsigned int	n, len;
 
-    else if(
-	     (PVTS(r, page)->cmdbuf_endp - PVTS(r, page)->cmdbuf_base)
-		== (BUFSIZ-1)						 &&
-	     (
-	       PVTS(r, page)->cmdbuf_escstart ?
-		(PVTS(r, page)->cmdbuf_escstart > PVTS(r,page)->cmdbuf_base) :
-		(PVTS(r, page)->cmdbuf_ptr > PVTS(r, page)->cmdbuf_base)
-	     )
-	   )
-    {
-	/*
-	 * If there is space at beginning of the buffer, but not space at the
-	 * end of the buffer, move the content of buffer forward to free space
-	 */
-	unsigned char	*start;
-	unsigned int	n, len;
-
-	start = PVTS(r, page)->cmdbuf_escstart ?
-	    PVTS(r, page)->cmdbuf_escstart : PVTS(r, page)->cmdbuf_ptr;
+		start = PVTS(r, page)->cmdbuf_escstart ?
+			PVTS(r, page)->cmdbuf_escstart : PVTS(r, page)->cmdbuf_ptr;
 
 
-	n   = start - PVTS(r, page)->cmdbuf_base;
-	len = PVTS(r, page)->cmdbuf_endp - start;
+		n   = start - PVTS(r, page)->cmdbuf_base;
+		len = PVTS(r, page)->cmdbuf_endp - start;
 
-	assert( n == BUFSIZ - 1 - len );
-	assert( start < PVTS(r, page)->cmdbuf_endp );
+		assert( n == BUFSIZ - 1 - len );
+		assert( start < PVTS(r, page)->cmdbuf_endp );
 
-	MEMMOVE( PVTS(r, page)->cmdbuf_base, start, len );
+		MEMMOVE( PVTS(r, page)->cmdbuf_base, start, len );
 
-	PVTS(r, page)->cmdbuf_ptr   -= n;
-	PVTS(r, page)->cmdbuf_endp  -= n;
-	if( PVTS(r, page)->cmdbuf_escstart )
-	    PVTS(r, page)->cmdbuf_escstart -= n;
-	if( PVTS(r, page)->cmdbuf_escfail )
-	    PVTS(r, page)->cmdbuf_escfail -= n;
-    }
+		PVTS(r, page)->cmdbuf_ptr   -= n;
+		PVTS(r, page)->cmdbuf_endp  -= n;
+		if( PVTS(r, page)->cmdbuf_escstart )
+			PVTS(r, page)->cmdbuf_escstart -= n;
+		if( PVTS(r, page)->cmdbuf_escfail )
+			PVTS(r, page)->cmdbuf_escfail -= n;
+	}
 }
 
 
 /*
- * This function returns the number of bytes being read from a child
+ * This function returns the number of bytes being read from a child file descriptor.
  * - r is the mrxvt state;
  * - page is the tab number you want to read the child output from;
  * - count is the maximum number of bytes you want to read.
@@ -1983,10 +1985,11 @@ rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
 
 	for (i = 0; i <= LTAB(r); i++)
 	{
-		unsigned int	count, bufsiz, countwc;
-		char* byte_buffer = (char*) PVTS(r, i)->cmdbuf_ptr;
-		// count is the number of bytes that can be read (remaining place in buffer).
+		unsigned int	count, bufsize, countwc;
+		// count is the number of bytes read from the command file descriptor.
 		// countwc is the actual number of character read.
+		char* byte_buffer = (char*) PVTS(r, i)->cmdbuf_endp;
+		//wchar_t* last_charbuf_end = PVTS(r, i)->charbuf_end;
 
 		/* check for activity */
 		rxvt_monitor_tab(r,i);
@@ -2002,70 +2005,57 @@ rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "reading from shell %d\n", i));
 
 		/* check our command buffer before reading data */
-		rxvt_check_cmdbuf( r, i );
+		rxvt_check_cmdbuf( r, i ); // TODO: make a similar function for charbug!
 
 		/* The buffer size is the buffer length - used length */
-		count = bufsiz = (BUFSIZ - 1) -
+		//count =
+		bufsize = (BUFSIZ - 1) -
 			(PVTS(r, i)->cmdbuf_endp - PVTS(r, i)->cmdbuf_base);
 
 		/* read data from the command fd into buffer */
-		count -= rxvt_read_child_cmdfd (r, i, count);
+		//count -= rxvt_read_child_cmdfd (r, i, count);
+		count = rxvt_read_child_cmdfd (r, i, bufsize);
+		*PVTS(r, i)->cmdbuf_endp = '\0';
 		// TODO: now I should transform the char output into meaningful wchar_t!
 		// TODO: shouldn't I change rxvt_read_child_cmdfd so that it ends the buffer with \0?
-		countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) &byte_buffer, count, NULL); // bufsiz - count?
-		if (countwc == -1)
+		countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) &byte_buffer, bufsize, NULL); // bufsiz - count?
+		while (NOT_NULL (byte_buffer)) // the byte buffer has not been fully consumed until cmdbuf_end.
 		{
-			if (errno == EILSEQ)
+			if (countwc == -1)
 			{
-				//An invalid multibyte sequence has been encountered.
-				//In this case *src is left pointing to the invalid multibyte sequence
-				// byte_buffer - PVTS(r, i)->cmdbuf_ptr char have been written.
-				// PVTS(r, i)->charbuf_end is updated TODO: check this behaviour.
-				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered and removed in tab %d.", i));
-				//It will be replaced by a unknown character.\n", i));
+				if (errno == EILSEQ)
+				{
+					//An invalid multibyte sequence has been encountered.
+					//In this case *src is left pointing to the invalid multibyte sequence
+					// PVTS(r, i)->charbuf_end - last_charbuf_end characters have been written to the buffer.
+					// PVTS(r, i)->charbuf_end is updated as wanted.
+					rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered and removed in tab %d.", i));
 
-				do
-				{
-					countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) byte_buffer, 1, NULL);
+					do
+					{
+						countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) ++byte_buffer, 1, NULL);
+					}
+					while (countwc == -1 && byte_buffer < (char *) PVTS(r, i)->cmdbuf_endp);
 				}
-				while (countwc == -1 && byte_buffer < (char *) PVTS(r, i)->cmdbuf_endp);
-			}
-			else // should not occure!
-			{
-				rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "In rxvt_process_children_cmdfd, mbsrtowcs failed with errno = %i. This should not occure.\n", errno));
-				assert (0);
-			}
-			/* If the first char is OK, but not the second, it returns -1 anyway.
-			*  This is a bug from the child probably (bad support of locale encoding?),
-			*  but we are not going to dump all the output just for maybe one single byte!
-			*  So I search by dichotomy the broken byte and shall replace it by a "unknown" character in the output.
-			*/
-			/*int subcount = countwc;
-			while (countwc == -1)
-			{
-				subcount = (subcount - 1) / 2;
-				if (subcount == 0) // if we arrive here, then it was the first character which was wrong!
+				else // should not occure!
 				{
-					PVTS(r, i)->cmdbuf_ptr++; // I consume the wrong byte.
-					//PVTS(r, i)->charbuf_end = 0; // Here will have to set a char to tell "missing glyph"?!
-					// it is important here not to just dump the char but set something instead to warn there is an error.
-					break; // should I just break and come back some other time? Or process the rest now?
-					countwc = mbstowcs (PVTS(r, i)->charbuf_end, (char*) PVTS(r, i)->cmdbuf_ptr, subcount);
+					rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "In rxvt_process_children_cmdfd, mbsrtowcs failed with errno = %i. This should not occure.\n", errno));
+					assert (0);
 				}
-			} // when we get out of this, then some output has been read!*/
+
+				//countwc = PVTS(r, i)->charbuf_end - last_charbuf_end;
+			}
+			//count = byte_buffer
+			bufsize = (BUFSIZ - 1) -
+					(PVTS(r, i)->cmdbuf_endp - PVTS(r, i)->cmdbuf_base);
+			countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, (const char**) &byte_buffer, bufsize, NULL);
 		}
-		else; // I could process data without error. Continue... 
-
-#if 0
-		/* check if a child died */
-		if( PVTS(r, i)->dead && errno == EIO )
-			*PVTS(r, i)->cmdbuf_endp = (char) 0;
-#endif
 
 		/* highlight inactive tab if there is some input */
 		if(
 				NOTSET_OPTION(r, Opt2_hlTabOnBell)	    &&
-				bufsiz != count			    &&
+				//bufsiz != count			    &&
+				countwc > 0 &&
 				i != ATAB(r)
 		  )
 		{
