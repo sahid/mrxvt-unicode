@@ -55,6 +55,7 @@ typedef struct {
 } row_col_t;
 
 typedef unsigned char text_t;
+typedef wchar_t wtext_t;
 #if defined(TTY_256COLOR) || defined(MULTICHAR_SET)
 # define rend_t	    uint32_t
 #else
@@ -207,6 +208,7 @@ typedef struct
 typedef struct
 {
     text_t**	    text;	/* _all_ the text */
+    wtext_t**	    wtext;	/* _all_ the text */
     int16_t*	    tlen;	/* length of each text line */
     rend_t**	    rend;	/* rendition, uses RS_ flags */
     row_col_t       cur;	/* cursor position on the screen */
@@ -617,8 +619,10 @@ typedef struct
 
     /* moved from rxvt_t */
     text_t**	    drawn_text;	/* text drawn on screen (characters) */
+    wtext_t**	    wdrawn_text;	/* text drawn on screen (characters) */
     rend_t**	    drawn_rend;	/* text drawn on screen (rendition) */
     text_t**	    buf_text;
+    wtext_t**	    wbuf_text;
     rend_t**	    buf_rend;
     screen_t        screen;
 #if NSCREENS

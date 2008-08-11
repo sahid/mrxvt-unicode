@@ -7189,6 +7189,7 @@ rxvt_process_getc( rxvt_t *r, int page, unsigned char ch )
 
 		else if( ++nchars > r->TermWin.ncol )
 		{
+			// TODO: use wcwidth
 		    PVTS(r, page)->scrolled_lines++;
 		    nchars = 0;
 		}

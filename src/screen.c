@@ -2897,6 +2897,7 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\e[32mNow I draw %s\e[0m\n", str));
     //XFTDRAW_STRING (win, fore, font, x, y, str, len);
     //XFTDRAW_STRING (win, fore, font, x, y, "a", 1);
+	//XFTDRAW_STRING (win, fore, font, x, y, "\e[32mtest\e[0m\n", strlen("\e[32mtest\e[0m\n"));
 	 {
 		 int i;
 		//FT_Library    library;
@@ -2948,7 +2949,8 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 		//glyph_index = XftCharIndex (dpy, xftfont, *fc);
 		//XftDrawGlyphs (win, fore, font, x+len, y+1, &glyph_index, 1);
 		//XftDrawGlyphs (win, fore, xftfont, x, y, &glyph_index, 1);
-		XftDrawString32 (win, fore, xftfont, x, y, fc, lenglyphs);
+		//XftDrawString32 (win, fore, xftfont, x, y, fc, lenglyphs);
+		XftDrawString32 (win, fore, font, x, y, fc, lenglyphs);
 		//XwcDrawString (win, fore, xftfont, x, y, fc, lenglyphs); -> for non xft!
 
 		x = x + r->TermWin.xftmsize;
@@ -2959,6 +2961,72 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 
 	 XftFontClose (dpy, xftfont);
 	 }
+}
+
+void
+wrxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
+	rend_t rend, int pfont,
+	XftDraw* win, XftColor* fore, int x, int y, wchar_t* str, int len,
+	void (*xftdraw_string)())
+{
+	XftFont *font; // TODO: check how the font is initialized!
+
+	/*
+	 * If "multichar" stuff is needed in tab titles etc, then xftpfont /
+	 * xftPfont must be multichar capable. If that's not an option, then set
+	 * xftpfont to NULL, and the correct multichar font will be used.
+	 */
+	if( pfont && r->TermWin.xftpfont )
+	{
+		font = ( pfont == USE_BOLD_PFONT) ?
+			r->TermWin.xftPfont : r->TermWin.xftpfont;
+	}
+#ifdef MULTICHAR_SET
+	else if( xftdraw_string == XftDrawStringUtf8 )
+		font = r->TermWin.xftmfont;
+#endif
+	else font = r->TermWin.xftfont;
+
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Draw: 0x%8x %p: '%.40s'\n", rend, font, str ));
+
+# ifdef TEXT_SHADOW
+	if (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+	{
+		/*
+		 * Get the bounding box of the rectangle we would draw, and clip to it.
+		 */
+		XGlyphInfo  extents;
+		int	sx, sy;	/* Shadow offsets */
+
+		rxvt_dbgmsg ((DBG_VERBOSE, DBG_SCREEN, "handling text shadow for %s (%d)\n", str, len));
+
+		XftTextExtents32 ( r->Xdisplay, font, (FcChar32*) str, len, &extents);
+
+		/*
+		 * We should ignore extents.height. The height of the drawn text might
+		 * be much smaller than the height of the font (which is really what
+		 * we've reserved space for.
+		 */
+		rxvt_set_clipping( r, win, gc, refreshRegion,
+				x, y - font->ascent, extents.width - extents.x, font->height,
+				&sx, &sy);
+
+		XftDrawString32 (win, &(r->TermWin.xftshadow), font, x+sx, y+sy, (FcChar32*) str, len);
+		/*
+		 * We need to free clipping area, otherwise text on screen may be
+		 * clipped unexpectedly. Is there a better way to unset it, say,
+		 * XUnsetClipRectangles?
+		 */
+		rxvt_free_clipping (r, win, gc, refreshRegion);
+	}
+# endif	/* TEXT_SHADOW */
+
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\e[32mNow I draw %s\e[0m\n", str));
+	//XFTDRAW_STRING (win, fore, font, x, y, "\e[32mtest\e[0m\n", strlen("\e[32mtest\e[0m\n"));
+
+	XftDrawString32 (win, fore, font, x, y, (FcChar32*) str, len);
+	//XwcDrawString (win, fore, xftfont, x, y, fc, lenglyphs); -> for non xft!
+
 }
 #undef XFTDRAW_STRING
 #endif	/* XFT_SUPPORT */
@@ -3062,6 +3130,71 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
     draw_string (r->Xdisplay, win, gc, x, y, str, len);
 }
 
+void
+wrxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
+	int x, int y, wchar_t* str, int len, int (*draw_string)())
+{
+# ifdef TEXT_SHADOW
+	while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+	{
+		int	sx, sy;
+		XGCValues   gcvalue;
+
+		int	    unused_dir, ascent, descent;
+		XCharStruct charstruct;
+		GContext    gid = XGContextFromGC( gc );
+		XFontStruct *font = XQueryFont( r->Xdisplay, gid);
+
+		if( font == NULL ) break;
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "handling text shadow for %s (%d)\n", str, len));
+
+		/*
+		 * Save the old GC values foreground.
+		 */
+		XGetGCValues (r->Xdisplay, gc,
+				GCForeground | GCBackground | GCFillStyle, &gcvalue);
+
+		/*
+		 * Get the bounding box of the rectangle we would draw, and clip to it.
+		 */
+
+		//XwcTextExtents (r->TermWin.fontset, str, len, &unused_dir, &ascent, &descent, &charstruct);
+		// TODO!
+
+		/*
+		 * Restrict output to the above bounding box.
+		 */
+		rxvt_set_clipping( r, NULL, gc, refreshRegion,
+				x, y - font->ascent,
+				charstruct.width, font->ascent + font->descent,
+				&sx, &sy);
+
+		/*
+		 * Draw the shadow at the appropriate offset.
+		 */
+		XSetForeground (r->Xdisplay, gc, r->TermWin.shadow);
+		XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x+sx, y+sy, str, len);
+
+		/*
+		 * Restore old GC values.
+		 */
+		XChangeGC( r->Xdisplay, gc,
+				GCForeground | GCBackground | GCFillStyle,
+				&gcvalue);
+
+		/*
+		 * Unclip drawing for remaining drawing.
+		 */
+		rxvt_free_clipping (r, NULL, gc, refreshRegion);
+
+		XFreeFontInfo( NULL, font, 1);
+		break;
+	}
+# endif	/* TEXT_SHADOW */
+
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "output entire string: %s\n", str));
+	XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x, y, str, len);
+}
 
 /* 
 ** Draw the string:
