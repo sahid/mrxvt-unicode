@@ -891,6 +891,9 @@ rxvt_init_bfont_xft (rxvt_t* r, XftPattern* xpold)
 
 # ifdef MULTICHAR_SET
 /* INTPROTO */
+/* TODO (Jehan): I think all these font initialization must be rewritten.
+ * + Is a distinction between multi-byte font or single-byte really needed?
+ */
 int
 rxvt_init_mfont_xft (rxvt_t* r, XftPattern* xp, const char* ofname)
 {

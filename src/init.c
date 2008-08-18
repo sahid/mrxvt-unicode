@@ -1605,7 +1605,7 @@ rxvt_init_xlocale(rxvt_t *r)
 
 	if (XSupportsLocale() != True)
 	{
-	    rxvt_msg (DBG_ERROR, DBG_INIT, "The locale is not supported by Xlib");
+	    rxvt_msg (DBG_ERROR, DBG_INIT, "The locale %s is not supported by Xlib", r->h->locale);
 	    return;
 	}
 	rxvt_IM_set_fontset (r, 0);
@@ -2917,14 +2917,16 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 #endif
 
     /* Initialize input buffer */
-    PVTS(r, page)->cmdbuf_ptr	= PVTS(r, page)->cmdbuf_endp
-				= PVTS(r, page)->cmdbuf_base;
+    PVTS(r, page)->outbuf_start	= PVTS(r, page)->outbuf_end
+				= PVTS(r, page)->outbuf_base;
     
 	 /* Initialize input buffer (new version with glyph index); */
     //PVTS(r, page)->glyphbuf_ptr	= PVTS(r, page)->glyphbuf_end
 	//			= PVTS(r, page)->glyphbuf;
     PVTS(r, page)->charbuf_start	= PVTS(r, page)->charbuf_end
 				= PVTS(r, page)->charbuf_base;
+	 SET_NULL( PVTS(r, i)->charbuf_escstart);
+	 SET_NULL( PVTS(r, i)->charbuf_escfail);
     
 
     /* Initialize write out buffer */

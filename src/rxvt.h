@@ -1672,6 +1672,7 @@ struct rxvt_hidden
 							   MRXVT_TABTITLE*/
     char*	    env_colorfgbg;
     char*	    buffer;
+    wchar_t*	 wbuffer;
     char*	    locale;
 
 #if 0
@@ -1685,8 +1686,8 @@ struct rxvt_hidden
     const char*	    rs[NUM_RESOURCES];
 
 #if 0    /* command input buffering */
-    unsigned char*  cmdbuf_ptr, *cmdbuf_endp;
-    unsigned char   cmdbuf_base[BUFSIZ];
+    unsigned char*  outbuf_start, *outbuf_end;
+    unsigned char   outbuf_base[BUFSIZ];
     unsigned char   kbuf[KBUFSZ];
 #endif
 

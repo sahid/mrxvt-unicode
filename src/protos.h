@@ -237,7 +237,8 @@ int              rxvt_scr_change_screen           __PROTO((rxvt_t* r, int page, 
 void             rxvt_scr_color                   __PROTO((rxvt_t* r, int page, unsigned int color, int fgbg));
 void             rxvt_scr_rendition               __PROTO((rxvt_t* r, int page, int set, int style));
 int              rxvt_scroll_text                 __PROTO((rxvt_t* r, int page, int row1, int row2, int count, int spec));
-void             rxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const unsigned char* str, int nlines, int len));
+void             rxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const unsigned char* str, int nlines, int len)); // TODO (Jehan): remove this function.
+void             mrxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const wchar_t* str, int nlines, int len));
 void             rxvt_scr_backspace               __PROTO((rxvt_t* r, int page));
 void             rxvt_scr_tab                     __PROTO((rxvt_t* r, int page, int count));
 void             rxvt_scr_backindex               __PROTO((rxvt_t* r, int page));
@@ -268,6 +269,7 @@ int              rxvt_scr_page                    __PROTO((rxvt_t* r, int page, 
 void             rxvt_scr_bell                    __PROTO((rxvt_t *r, int page));
 void             rxvt_scr_printscreen             __PROTO((rxvt_t* r, int page, int fullhist, int pretty, int linecont, const char *pipeName));
 void             rxvt_scr_refresh                 __PROTO((rxvt_t* r, int page, unsigned char refresh_type));
+void             mrxvt_scr_refresh                 __PROTO((rxvt_t* r, int page, unsigned char refresh_type));
 void             rxvt_scr_clear                   __PROTO((rxvt_t* r, int page));
 void             rxvt_scr_dump                    __PROTO((rxvt_t* r, int page, int fd));
 void             rxvt_selection_check             __PROTO((rxvt_t* r, int page, int check_more));
