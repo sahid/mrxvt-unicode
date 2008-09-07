@@ -9,6 +9,7 @@
  * Copyright (c) 2005        Teun Burgers <burgers@ecn.nl>
  * Copyright (c) 2004-2005   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -314,11 +315,11 @@ typedef struct {
 #undef NOT_KEYSYM
 #undef UNSET_KEYSYM
 #define IS_KEYSYM(KEYSYM_ID)	\
-    (None != (KEYSYM_ID))
+    (NoSymbol != (KEYSYM_ID))
 #define NOT_KEYSYM(KEYSYM_ID)	\
-    (None == (KEYSYM_ID))
+    (NoSymbol == (KEYSYM_ID))
 #define UNSET_KEYSYM(KEYSYM_ID)	\
-    ((KEYSYM_ID) = None)
+    ((KEYSYM_ID) = NoSymbol)
 
 
 #ifndef HAVE_XPOINTER
@@ -1193,8 +1194,10 @@ enum {
 #ifdef PRINTPIPE
     Rs_print_pipe,
 #endif
+#ifdef USE_XIM
     Rs_preeditType,
     Rs_inputMethod,
+#endif
     Rs_opacity,		/* transluscent window opacity degree */
     Rs_opacityDegree,	/* opacity change degree */
 #ifndef NO_FRILLS
@@ -1271,7 +1274,9 @@ enum {
 #ifdef HAVE_X11_SM_SMLIB_H
     XA_SM_CLIENT_ID,
 #endif
+#ifdef USE_XIM
     XA_WM_LOCALE_NAME,
+#endif
 #ifdef TRANSPARENT
     XA_XROOTPMAPID,
     XA_XSETROOTID,
@@ -1491,8 +1496,7 @@ enum {
  * VARIABLES
  *****************************************************************************
  */
-struct rxvt_hidden
-{
+struct rxvt_hidden {
     unsigned char   BOOLVAR( want_clip_refresh, 1),	/* Only refresh region
 							   specified by
 							   refreshRegion */
@@ -1619,9 +1623,11 @@ struct rxvt_hidden
 #ifndef NO_DELETE_KEY
     const char*	    key_delete;
 #endif
+#ifdef USE_XIM
     XIC		    Input_Context;
     XIMStyle	    input_style;
     int		    event_type;
+#endif
     struct mouse_event	MEvent;
     row_col_t	    oldcursor;
 #ifdef MULTICHAR_SET
@@ -1672,13 +1678,12 @@ struct rxvt_hidden
 							   MRXVT_TABTITLE*/
     char*	    env_colorfgbg;
     char*	    buffer;
-    wchar_t*	 wbuffer;
     char*	    locale;
 
 #if 0
-    unsigned char*  v_buffer;
-    unsigned char*  v_bufstr;
-    unsigned char*  v_bufptr;
+    unsigned char*  inbuf_base;
+    unsigned char*  inbuf_start;
+    unsigned char*  inbuf_end;
     unsigned char*  v_bufend;
 #endif
 

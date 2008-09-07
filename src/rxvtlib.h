@@ -8,6 +8,7 @@
  * Copyright (c) 2005        Teun Burgers <burgers@ecn.nl>
  * Copyright (c) 2004-2005   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005        Gautam Iyer <gi1242@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,13 +50,13 @@ typedef uint32_t	unicode_t;
 struct rxvt_vars;	/* defined later on */
 struct rxvt_hidden;	/* not defined here */
 
-typedef struct {
+typedef struct
+{
     int32_t         row;
     int32_t         col;
 } row_col_t;
 
 typedef unsigned char text_t;
-typedef wchar_t wtext_t;
 #if defined(TTY_256COLOR) || defined(MULTICHAR_SET)
 # define rend_t	    uint32_t
 #else
@@ -108,7 +109,9 @@ typedef struct
 #ifdef MULTICHAR_SET
     XFontStruct*    mfont;  /* Multichar font structure */
 #endif
+#ifdef USE_XIM
     XFontSet	    fontset;
+#endif
 #ifdef XFT_SUPPORT
     XftPattern*	    xftpattern;
     XftFont	    *xftfont, *xftpfont, *xftPfont;
@@ -208,7 +211,6 @@ typedef struct
 typedef struct
 {
     text_t**	    text;	/* _all_ the text */
-    wtext_t**	    wtext;	/* _all_ the text */
     int16_t*	    tlen;	/* length of each text line */
     rend_t**	    rend;	/* rendition, uses RS_ flags */
     row_col_t       cur;	/* cursor position on the screen */
@@ -223,7 +225,8 @@ typedef struct
 } screen_t;
 
 
-typedef struct {
+typedef struct
+{
     unsigned char*  text;   /* selected text */
     uint32_t	    len;    /* length of selected text */
     enum {
@@ -241,7 +244,8 @@ typedef struct {
     row_col_t       end;    /* one character past end point */
 } selection_t;
 
-typedef enum {
+typedef enum
+{
     OLD_SELECT, OLD_WORD_SELECT, NEW_SELECT
 } sstyle_t;
 
@@ -356,8 +360,11 @@ typedef enum {
     (Opt2_veryBold | Opt2_smartResize)
 #endif
 
+#define Opt3_chopEnd		    ((1LU<<2) | IS_OPTION3)
+
 #define DEFAULT_OPTIONS3    \
-    (IS_OPTION3)
+    (Opt3_chopEnd | IS_OPTION3)
+
 #define DEFAULT_OPTIONS4    \
     (IS_OPTION4)
 
@@ -414,7 +421,8 @@ typedef enum {
 /* ------------------------------------------------------------------------- */
 
 #ifdef HAVE_MENUBAR
-typedef struct {
+typedef struct
+{
     short           state;
     Window          win;
     GC		    gc;
@@ -435,7 +443,8 @@ typedef struct {
 
 
 #ifdef HAVE_SCROLLBARS
-typedef struct {
+typedef struct
+{
     char            state;  /* scrollbar state */
     char            init;   /* scrollbar has been initialised */
     short           beg;    /* slider sub-window begin height */
@@ -499,7 +508,8 @@ typedef struct {
 #endif	/* HAVE_SCROLLBARS */
 
 
-typedef struct {
+typedef struct
+{
     char	state;	/* tabbar state */
 
     short	ltab;	/* last tab */
@@ -532,7 +542,8 @@ typedef struct {
 
 
 #ifdef BACKGROUND_IMAGE
-typedef struct {
+typedef struct
+{
     short           w, h, x, y;
     Pixmap          pixmap; 
 } bgPixmap_t;
@@ -548,7 +559,8 @@ typedef struct {
 #  define XpmDepth	    (0)
 #  define XpmSize	    (0)
 #  define XpmReturnPixels   (0)
-typedef struct {
+typedef struct
+{
     unsigned long   valuemask;
     Visual*	    visual;
     Colormap	    colormap;
@@ -561,7 +573,8 @@ typedef struct {
 #endif	/* BACKGROUND_IMAGE */
 
 
-typedef enum {
+typedef enum
+{
     TERMENV_XTERM = 0,
     TERMENV_RXVT,
     TERMENV_VT102,
@@ -574,10 +587,9 @@ struct term_t;
 typedef struct
 {
     /*
-     * Index to vts. If it's -1, then this term_t structure is not used.
-     * Otherwise, it is used by pointer vts[vts_idx]. This is to improve destroy
-     * performance so that we only need to do (i = page..ltab) vts[i] = vts[i+1]
-     * instead of vterm[i] = vterm[i+1].
+     * Index to vts.
+     * This term_t can be accessed through pointer vts[vts_idx].
+     * It is also the order in the tabbar.
      */
     short	    vts_idx;
 
@@ -619,10 +631,8 @@ typedef struct
 
     /* moved from rxvt_t */
     text_t**	    drawn_text;	/* text drawn on screen (characters) */
-    wtext_t**	    wdrawn_text;	/* text drawn on screen (characters) */
     rend_t**	    drawn_rend;	/* text drawn on screen (rendition) */
     text_t**	    buf_text;
-    wtext_t**	    wbuf_text;
     rend_t**	    buf_rend;
     screen_t        screen;
 #if NSCREENS
@@ -745,10 +755,10 @@ typedef struct
      * Data we want to write into cmd_fd is buffered in here, before being
      * written by rxvt_tt_write(). [Child's input buffer]
      */
-    unsigned char   *v_buffer,		/* pointer to physical buffer */
-		    *v_bufstr,		/* beginning of area to write */
-		    *v_bufptr,		/* end of area to write */
-		    *v_bufend;		/* end of physical buffer */
+    unsigned char   *inbuf_base,		/* pointer to physical buffer */
+		    *inbuf_start,		/* beginning of area to write */
+		    *inbuf_end;		/* end of area to write */
+	 int inbuf_room; /* Remaining room at the end of the buffer */
 
     /*
      * Data read from cmd_fd is buffered in here [Child's output buffer]
@@ -759,15 +769,6 @@ typedef struct
 		    *outbuf_start,	/* current char */
 		    *outbuf_end;	/* End of read child's output */
     unsigned char   outbuf_base[BUFSIZ];
-
-	 //FT_UInt *glyphbuf_ptr, /* Current glyph to draw */
-	//			*glyphbuf_end;
-	//FT_UInt glyphbuf[BUFSIZ];
-	wchar_t *charbuf_escstart,
-			  *charbuf_escfail,
-			  *charbuf_start,
-			  *charbuf_end;
-	wchar_t	charbuf_base[BUFSIZ];
 } term_t;
 
 #define TAB_MON_OFF 0            /* tab monitoring off */
@@ -797,14 +798,16 @@ typedef struct
 /*
  * Action to take when a macro is called / menu item is selected.
  */
-typedef struct {
+typedef struct
+{
     unsigned short  type;   /* must not be changed; first element */
     unsigned short  len;    /* strlen (str) */
     unsigned char   *str;   /* action to take */
 } action_t;
 
 /* Values for macro_t.type. Must sync this with macroNames from macros.c */
-enum {
+enum
+{
     MacroFnDummy=0,
     MacroFnEsc,
     MacroFnStr,
@@ -837,7 +840,8 @@ enum {
 } macroFnNames;
 
 typedef unsigned char macro_priority_t;
-typedef struct {
+typedef struct
+{
     KeySym		keysym;
     unsigned char	modFlags;	/* First 4 bits are the action order
 					   number. Last four bits are the
@@ -936,9 +940,6 @@ typedef struct rxvt_vars
 		    *xftColorsUnfocus;
 # endif
 
-	FT_Library* ft_library;
-	FT_Face* ft_face;
-	FT_Error* ft_error;
 
     profile_t	    profile[MAX_PROFILES];
 
@@ -954,9 +955,9 @@ typedef struct rxvt_vars
      * 2006-08-18 gi1242 TODO: This should be an array that grows dynamically in
      * size. Plus we should only reserve enough memory for a our currently
      * displayed term structures.
+	  * 2008-08-08 Jehan: done!
      */
-    term_t	    vterm[MAX_PAGES];
-    term_t*	    vts[MAX_PAGES];
+    term_t**	    vts;
 
     short	    tabClicked;		    /* Tab clicked by user. Used for
 					       moving tabs by drag and drop. */
@@ -1002,7 +1003,8 @@ typedef struct rxvt_vars
 } rxvt_t;
 
 
-typedef enum {
+typedef enum
+{
     HIDE_MENUBAR = 0,
     SHOW_MENUBAR,
     HIDE_TABBAR,
@@ -1124,7 +1126,6 @@ typedef enum {
  *                                PROTOTYPES                                 *
  *****************************************************************************/
 void	    rxvt_main_loop(rxvt_t *);
-void	    mrxvt_main_loop (rxvt_t *);
 rxvt_t*	    rxvt_init (int, const char *const *);
 
 #endif	    /* __RXVTLIB_H__ */

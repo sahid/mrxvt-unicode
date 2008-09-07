@@ -14,6 +14,7 @@
  * Copyright (c) 2005        Burgers A.R. <burgers@ecn.nl>
  * Copyright (c) 2004-2006   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +51,7 @@ void rxvt_font_up_down         (rxvt_t*, int, int);
 int  rxvt_get_font_widest      (XFontStruct*);
 void rxvt_set_colorfgbg        (rxvt_t*);
 void rxvt_resize_sub_windows   (rxvt_t*);
+#ifdef USE_XIM
 void rxvt_IM_set_size          (rxvt_t*, XRectangle*);
 void rxvt_IM_set_position      (rxvt_t*, XPoint*);
 void rxvt_IM_set_color         (rxvt_t*, unsigned long*, unsigned long*);
@@ -60,6 +62,7 @@ void rxvt_IM_destroy_callback  (XIM, XPointer, XPointer);
 Bool rxvt_IM_get_IC            (rxvt_t*);
 void rxvt_IM_send_size         (rxvt_t*);
 void rxvt_IM_set_status_pos    (rxvt_t*);
+#endif
 void rxvt_set_r                (rxvt_t*);
 #ifdef XFT_SUPPORT
 void xftFreeUnusedFont	       (rxvt_t*, XftFont*);
@@ -138,109 +141,103 @@ rxvt_pre_show_init( rxvt_t *r )
 
 /* rxvt_init() */
 /* LIBPROTO */
-/* The main initialization function called from main ().
- * If it fails, it will return NULL (hence mrxvt will stop with failure).
- * Hence it will return the mrxvt structure (rxvt_t) which keeps the status of mrxvt
- * during the whole runtime.
+/*
+ * The main initialization function called from main with the command line parameters.
+ *  If it fails, it will return NULL (hence mrxvt will stop with failure).
+ *  Otherwise it will return the mrxvt structure (rxvt_t) which keeps the status of mrxvt
+ *  during the whole runtime (must be passed to all functions).
  */
-rxvt_t		*
-rxvt_init(int argc, const char *const *argv)
+rxvt_t *
+rxvt_init (int argc, const char *const *argv)
 {
-    register int    i;
-    register int    itnum; /* initial terminal number */
-    rxvt_t*	    r;
+	register int    i;
+	register int    itnum; /* initial terminal number */
+	rxvt_t*	    r;
 
-    /* Allocate memory for "r" and initialize contents to 0 */
-    r = (rxvt_t *) rxvt_calloc(1, sizeof(rxvt_t));
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN, "rxvt_init (%d, %s)\n", argc, argv));
+	/* Allocate memory for "r" and initialize contents to 0 */
+	r = (rxvt_t *) rxvt_calloc(1, sizeof(rxvt_t));
 
-    /* Save "r" in _rxvt_vars. This is the only assignment to _rxvt_vars */
-    rxvt_set_r(r);
+	/* Save "r" in _rxvt_vars. This is the only assignment to _rxvt_vars */
+	rxvt_set_r(r);
 
-    /* Initialize vars in "r" */
-    if (rxvt_init_vars(r) < 0)
-    {
-	rxvt_msg (DBG_ERROR, DBG_MAIN,  "Could not initialize." );
-	rxvt_free(r);
-	return NULL;
-    }
+	/* Initialize vars in "r" */
+	if (rxvt_init_vars(r) < 0)
+	{
+		rxvt_msg (DBG_ERROR, DBG_MAIN,  "Could not initialize." );
+		rxvt_free(r);
+		return NULL;
+	}
 
-    /* save global argc and argv */
-    r->global_argc = argc;
-    r->global_argv = (char**) argv;
+	/* save global argc and argv */
+	r->global_argc = argc;
+	r->global_argv = (char**) argv;
 
-    rxvt_init_secondary(r);
-    cmd_argv = rxvt_init_resources(r, argc, argv);
+	rxvt_init_secondary(r);
+	cmd_argv = rxvt_init_resources(r, argc, argv);
 
-    rxvt_pre_show_init( r );
+	rxvt_pre_show_init( r );
 
-    rxvt_create_show_windows(r, argc, argv);
+	rxvt_create_show_windows(r, argc, argv);
 
 #ifdef TRANSPARENT
-    if (ISSET_OPTION(r, Opt_transparent))
-    {
-	XSelectInput(r->Xdisplay, XROOT, PropertyChangeMask);
-	/*
-	 * Our "parents" will automatically be checked on the first expose and
-	 * ConfigureNotify event respectively. Forcefully calling it is just a
-	 * waste of time.
-	 */
+	if (ISSET_OPTION(r, Opt_transparent))
+	{
+		XSelectInput(r->Xdisplay, XROOT, PropertyChangeMask);
+		/*
+		 * Our "parents" will automatically be checked on the first expose and
+		 * ConfigureNotify event respectively. Forcefully calling it is just a
+		 * waste of time.
+		 */
 # if 0
-	rxvt_check_our_parents(r);
+		rxvt_check_our_parents(r);
 # endif
-    }
+	}
 #endif
 
-    rxvt_init_env(r);
-    rxvt_init_command(r);
-    rxvt_init_screen (r);
+	rxvt_init_env(r);
+	rxvt_init_command(r);
+	rxvt_init_screen (r);
 
-    /*
-     * Initialize the pages
-     */
-    if( r->h->rs[Rs_initProfiles] )
-    {
-	/* Split into a comma separated string */
-	char *s = (char *) r->h->rs[Rs_initProfiles];
+	/*
+	 * Initialize the pages.
+	 */
+	if (r->h->rs[Rs_initProfiles])
+	{
+		char *s = (char *) r->h->rs[Rs_initProfiles];
+	
+		do
+		{
+			int profile = atoi( s );
+			rxvt_append_page (r, profile, NULL, NULL);
+			s = STRCHR( s, ',' );
+		}
+		while (NULL != s++);
+	}
+	/* Backward compatibility: Open profiles 0 .. n-1 if tnum=n. */
+	else if( r->h->rs[Rs_init_term_num] )
+	{
+		rxvt_msg (DBG_ERROR, DBG_MAIN,  "Option tnum is obsolete."
+				" Use --initProfileList instead" );
 
-	do
-	  {
-	    int profile = atoi( s );
+		itnum = atoi( r->h->rs[Rs_init_term_num] );
+		itnum = max( 1, itnum );
+		//itnum = min( itnum, MAX_PAGES );
 
-	    rxvt_append_page( r, profile, NULL, NULL );
+		for (i = 0; i < itnum; i ++)
+			rxvt_append_page( r, (i < MAX_PROFILES) ? i : 0 , NULL, NULL );
+	}
+	/* Just open the default tab */
+	else
+		rxvt_append_page( r, 0, NULL, NULL );
 
-	    s = STRCHR( s, ',' );
-	  }
-	while (NULL != s++);
-    }
+	/* Activate the tab */
+	rxvt_activate_page (r, 0);
 
+	/* Initialize xlocale after VT is created */
+	rxvt_init_xlocale(r);
 
-    /* Backward compatibility: Open profiles 0 .. n-1 if tnum=n. */
-    else if( r->h->rs[Rs_init_term_num] )
-    {
-	rxvt_msg (DBG_ERROR, DBG_MAIN,  "Option tnum is obsolete."
-		" Use --initProfileList instead" );
-
-	itnum = atoi( r->h->rs[Rs_init_term_num] );
-	itnum = max( 1, itnum );
-	itnum = min( itnum, MAX_PAGES );
-
-	for (i = 0; i < itnum; i ++)
-	    rxvt_append_page( r, (i < MAX_PROFILES) ? i : 0 , NULL, NULL );
-    }
-
-    /* Just open the default tab */
-    else
-	rxvt_append_page( r, 0, NULL, NULL );
-
-    /* Activate the tab */
-    rxvt_activate_page (r, 0);
-
-    /* Initialize xlocale after VT is created */
-    rxvt_init_xlocale(r);
-
-	// TODO: here I will initialize, FT_Face stuffs.
-
-    return r;
+	return r;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -340,11 +337,13 @@ rxvt_free_hidden( rxvt_t* r )
 # endif
 #endif	/* DEBUG */
 
+#ifdef USE_XIM
     if( r->h->Input_Context )   
     {
 	XDestroyIC( r->h->Input_Context );
 	SET_NULL(r->h->Input_Context); 
     }
+#endif
 }
 
 
@@ -846,7 +845,7 @@ rxvt_init_bfont_xft (rxvt_t* r, XftPattern* xpold)
 			r->TermWin.xftfont->height,
 			r->TermWin.xftbfont->max_advance_width,
 			r->TermWin.xftfont->max_advance_width));
-#ifdef DEBUG
+#if 0 /* was defined(DEBUG) */
 	    FcPatternPrint( xftbpattern );
 #endif
 	    /*
@@ -891,9 +890,6 @@ rxvt_init_bfont_xft (rxvt_t* r, XftPattern* xpold)
 
 # ifdef MULTICHAR_SET
 /* INTPROTO */
-/* TODO (Jehan): I think all these font initialization must be rewritten.
- * + Is a distinction between multi-byte font or single-byte really needed?
- */
 int
 rxvt_init_mfont_xft (rxvt_t* r, XftPattern* xp, const char* ofname)
 {
@@ -985,7 +981,7 @@ rxvt_init_mfont_xft (rxvt_t* r, XftPattern* xp, const char* ofname)
 	XftPatternAddBool (r->TermWin.xftmpattern, FC_GLOBAL_ADVANCE, FcTrue);
     }
 
-#  ifdef DEBUG
+#  if 0 /* was defined(DEBUG) */
     FcPatternPrint (r->TermWin.xftmpattern);
 #  endif
 
@@ -1238,7 +1234,7 @@ rxvt_init_font_xft (rxvt_t* r)
 	XftPatternAddBool (r->TermWin.xftpattern, FC_GLOBAL_ADVANCE, FcTrue);
     }
 
-# ifdef DEBUG
+# if 0 /* was defined(DEBUG) */
     FcPatternPrint (r->TermWin.xftpattern);
 # endif
 
@@ -2119,7 +2115,9 @@ rxvt_change_font_x11 (rxvt_t* r, const char *fontname)
     }
 #endif	/* MULTICHAR_SET */
 
+#ifdef USE_XIM
     rxvt_IM_change_fontset(r, idx);
+#endif
     return 1;
 }
 
@@ -2604,6 +2602,7 @@ rxvt_alloc_color( rxvt_t* r, XColor *screen_in_out, const char *colour )
 /* -------------------------------------------------------------------- *
  * -			    X INPUT METHOD ROUTINES			- *
  * -------------------------------------------------------------------- */
+#ifdef USE_XIM
 /* INTPROTO */
 void
 rxvt_IM_set_size(rxvt_t* r, XRectangle *size)
@@ -2805,12 +2804,10 @@ rxvt_IM_destroy_callback(XIM xim __attribute__((unused)), XPointer client_data _
     rxvt_t	    *r = rxvt_get_r();
 
     SET_NULL(r->h->Input_Context);
-#ifdef USE_XRegisterIMInstantiateCallback
     /* To avoid Segmentation Fault in C locale: Solaris only? */
     if (STRCMP(r->h->locale, "C"))
 	XRegisterIMInstantiateCallback(r->Xdisplay, NULL, NULL, NULL,
 	    rxvt_IM_init_callback, NULL);
-#endif
 }
 
 /*
@@ -2903,7 +2900,7 @@ rxvt_IM_get_IC(rxvt_t *r)
     xim = XOpenIM(r->Xdisplay, NULL, NULL, NULL);
     if (IS_NULL(xim))
     {
-	rxvt_msg (DBG_WARN, DBG_MAIN, "Unable to open IM\n");
+	rxvt_msg (DBG_WARN, DBG_MAIN, "Unalbe to open IM\n");
 	return False;
     }
 
@@ -3080,6 +3077,7 @@ rxvt_IM_resize(rxvt_t *r)
     else if (r->h->input_style & XIMPreeditArea)
 	rxvt_IM_set_status_pos(r);
 }
+#endif		    /* USE_XIM */
 
 /*----------------------------------------------------------------------*/
 static rxvt_t  *_rxvt_vars = NULL;

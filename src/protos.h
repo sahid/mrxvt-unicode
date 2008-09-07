@@ -6,6 +6,7 @@
  * Copyright (c) 1997-2001   Geoff Wing <gcw@pobox.com>
  * Copyright (c) 2004        Sergey Popov <p_sergey@jungo.com>
  * Copyright (c) 2004        Jingmin Zhou <jimmyzhou@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,7 +103,7 @@ void             rxvt_init_command                __PROTO((rxvt_t* r));
 CARD32           rxvt_get_desktop                 __PROTO((rxvt_t* r));
 void             rxvt_create_show_windows         __PROTO((rxvt_t* r, int argc, const char* const *argv));
 void             rxvt_destroy_termwin             __PROTO((rxvt_t* r, int page));
-void             rxvt_create_termwin              __PROTO((rxvt_t* r, int page, int profile,  const char TAINTED * title));
+int             rxvt_create_termwin              __PROTO((rxvt_t* r, int page, int profile,  const char TAINTED * title));
 const char*	 getProfileOption		  __PROTO(( rxvt_t *r, int profile, int resource ));
 Status		 ewmh_message			  __PROTO(( Display *, Window, Window, Atom, long, long, long, long, long));
 int		 rxvt_async_exec		  __PROTO((rxvt_t*, const char *));
@@ -237,8 +238,7 @@ int              rxvt_scr_change_screen           __PROTO((rxvt_t* r, int page, 
 void             rxvt_scr_color                   __PROTO((rxvt_t* r, int page, unsigned int color, int fgbg));
 void             rxvt_scr_rendition               __PROTO((rxvt_t* r, int page, int set, int style));
 int              rxvt_scroll_text                 __PROTO((rxvt_t* r, int page, int row1, int row2, int count, int spec));
-void             rxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const unsigned char* str, int nlines, int len)); // TODO (Jehan): remove this function.
-void             mrxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const wchar_t* str, int nlines, int len));
+void             rxvt_scr_add_lines               __PROTO((rxvt_t* r, int page, const unsigned char* str, int nlines, int len));
 void             rxvt_scr_backspace               __PROTO((rxvt_t* r, int page));
 void             rxvt_scr_tab                     __PROTO((rxvt_t* r, int page, int count));
 void             rxvt_scr_backindex               __PROTO((rxvt_t* r, int page));
@@ -269,7 +269,6 @@ int              rxvt_scr_page                    __PROTO((rxvt_t* r, int page, 
 void             rxvt_scr_bell                    __PROTO((rxvt_t *r, int page));
 void             rxvt_scr_printscreen             __PROTO((rxvt_t* r, int page, int fullhist, int pretty, int linecont, const char *pipeName));
 void             rxvt_scr_refresh                 __PROTO((rxvt_t* r, int page, unsigned char refresh_type));
-void             mrxvt_scr_refresh                 __PROTO((rxvt_t* r, int page, unsigned char refresh_type));
 void             rxvt_scr_clear                   __PROTO((rxvt_t* r, int page));
 void             rxvt_scr_dump                    __PROTO((rxvt_t* r, int page, int fd));
 void             rxvt_selection_check             __PROTO((rxvt_t* r, int page, int check_more));

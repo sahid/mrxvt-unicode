@@ -128,6 +128,8 @@ static const struct {
     STRG(Rs_maxTabWidth, "maxTabWidth", "mtw", "number", "maximum (char) title width of all tabs", 0),
     STRG(Rs_minVisibleTabs, "minVisibleTabs", "mvt", "number",
 	    "minimum # of tabs to keep visible (requires xftpfn)", 0),
+    BOOL( "chopEnd", "ce", Opt3_chopEnd,
+	"Chop right end of tab titles. (If false, chop left end)" ),
     BOOL( "highlightTabOnBell", "htb", Opt2_hlTabOnBell,
 	    "highlighting inactive tabs only when bell sounds" ),
     BOOL( "syncTabTitle", "stt", Opt2_syncTabTitle,
@@ -450,9 +452,11 @@ static const struct {
 	"multichar encoding mode = eucj|sjis|big5|gb|gbk|kr|noenc", 0),
 #endif		    /* MULTICHAR_SET */
 
+#ifdef USE_XIM
     STRG(Rs_inputMethod, "inputMethod", "im", "name", "name of input method", 0),
     STRG(Rs_preeditType, "preeditType", "pt", "style",
 	"input style = OverTheSpot|OffTheSpot|Root", 0),
+#endif		    /* USE_XIM */
 
 #ifdef GREEK_SUPPORT
     STRG(Rs_greek_keyboard, "greek_keyboard", "grk", "mode",
@@ -604,6 +608,9 @@ static const char optionsstring[] = "Options: "
 #endif
 #if defined(HAVE_MENUBAR)
     "menubar,"
+#endif
+#if defined(USE_XIM)
+    "XIM,"
 #endif
 #if defined(MULTICHAR_SET)
     "multichar_languages,"

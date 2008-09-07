@@ -9,6 +9,7 @@
  * Copyright (c) 2004-2006   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005        Mark Olesen <Mark.Olesen@gmx.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
+ * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -539,9 +540,23 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 	/*
 	 * If % interpolation was not possible, or returned a 1 byte long
 	 * string, then just copy the title over.
+	 *
+	 * 2008-08-04 Jim Diamond: Show the suffix of the title, not the prefix,
+	 * if chopEnd is enabled. This only affects the non-xft case.
 	 */
-	STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
-	str[r->TermWin.maxTabWidth] = '\0';
+	if( ISSET_OPTION( r, Opt3_chopEnd ) )
+	{
+	    STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
+	    str[r->TermWin.maxTabWidth] = '\0';
+	}
+	else
+	{
+	    int title_len = STRLEN(PVTS(r,tnum)->tab_title);
+	    int excess = max(title_len - r->TermWin.maxTabWidth, 0);
+
+	    STRNCPY( str, PVTS(r,tnum)->tab_title + excess,
+		     r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
+	}
     }
 
 
@@ -1051,8 +1066,11 @@ rxvt_tabbar_draw_buttons (rxvt_t* r)
 	switch (curimg)
 	{
 	    case XPM_TERM:
-		img[XPM_TERM] = (LTAB(r) == MAX_PAGES - 1) ? 
-		    img_d[XPM_TERM] : img_e[XPM_TERM];
+		/*img[XPM_TERM] = (LTAB(r) == MAX_PAGES - 1) ? 
+		    img_d[XPM_TERM] : img_e[XPM_TERM];*/
+			 /* 08-08-20 Jehan: 
+			  * As there is no more maximum tab, there is no disable image here. */
+			 img[XPM_TERM] = img_e[XPM_TERM];
 		break;
 	    case XPM_CLOSE:
 		img[XPM_CLOSE] = (ISSET_OPTION(r, Opt2_protectSecondary) &&
@@ -1196,27 +1214,15 @@ rxvt_append_page( rxvt_t* r, int profile,
     int	    num_cmd_args = 0; /* Number of args we got from parsing command */
     char**  argv;
 
-
     rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR, "rxvt_append_page( r, %d, %s, %s )\n", profile, title ? title : "(nil)", command ? command : "(nil)" ));
-
-    /* Sanitization */
-    assert( LTAB(r) < MAX_PAGES );
-
-    if (LTAB(r) == MAX_PAGES-1)
-    {
-	rxvt_msg (DBG_ERROR, DBG_TABBAR,  "Too many tabs" );
-	return ;
-    }
 
     if( profile < 0 || profile >= MAX_PROFILES )
     {
-	rxvt_msg (DBG_WARN, DBG_TABBAR,  "Warning: Profile %d out of range", profile );
+	rxvt_msg (DBG_WARN, DBG_TABBAR,  "Warning: Profile '%d' out of range; use profile '0' instead.", profile );
 	profile = 0;
     }
 
-    /* indicate that we add a new tab */
-    LTAB(r)++;
-    rxvt_dbgmsg ((DBG_VERBOSE, DBG_TABBAR, "last page is %d\n", LTAB(r)));
+    //LTAB(r)++;
 
     /*
      * Use command specified with -e only if we're opening the first tab, or the
@@ -1224,15 +1230,15 @@ rxvt_append_page( rxvt_t* r, int profile,
      *  execute (e.g. via the NewTab cmd macro).
      */
     if(
-	 cmd_argv	    /* Argument specified via -e option */
-	 && command == NULL /* No command specified (e.g. via NewTab macro) */
-	 && (
-	       LTAB(r)== 0			    /* First tab */
-	       || ISSET_OPTION(r, Opt2_cmdAllTabs)  /* -at option */
-	    )
+	    cmd_argv	    /* Argument specified via -e option */
+	    && command == NULL /* No command specified (e.g. via NewTab macro) */
+	    && (
+		//LTAB(r) == 0			    /* First tab */
+		LTAB (r) == - 1
+		|| ISSET_OPTION(r, Opt2_cmdAllTabs)  /* -at option */
+	       )
       )
 	argv = cmd_argv;
-
     else
     {
 	/* load tab command if necessary*/
@@ -1252,7 +1258,7 @@ rxvt_append_page( rxvt_t* r, int profile,
 	else
 	    argv = NULL;
     }
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR, "Forking command=%s, argv[0]=%s\n", command ? command : "(nil)", ( argv && argv[0] ) ? argv[0] : "(nil)" ));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR, "\tForking command=%s, argv[0]=%s\n", command ? command : "(nil)", ( argv && argv[0] ) ? argv[0] : "(nil)" ));
 
     /*
      * Set the tab title.
@@ -1268,7 +1274,14 @@ rxvt_append_page( rxvt_t* r, int profile,
 		title = argv[0];
 	}
     }
-    rxvt_create_termwin( r, LTAB(r), profile, title );
+    if (!rxvt_create_termwin( r, LTAB(r) + 1, profile, title ))
+    {
+	rxvt_dbgmsg ((DBG_ERROR, DBG_TABBAR,
+		    "\tThe initialization of the new tab failed.\n"));
+	return;
+    }
+
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_TABBAR, "Last page is %d.\n", LTAB(r)));
 
     /*
      * Run the child process.
@@ -1301,7 +1314,7 @@ rxvt_append_page( rxvt_t* r, int profile,
 		    child_cwd[len] = 0;
 	    }
 	}
-	
+
 	else
 	{
 #ifdef HAVE_WORDEXP_H
@@ -1382,8 +1395,9 @@ rxvt_append_page( rxvt_t* r, int profile,
     assert( -1 != LVTS(r)->cmd_fd );
     if (-1 == LVTS(r)->cmd_fd)
     {
+	rxvt_dbgmsg ((DBG_WARN, DBG_TABBAR,
+		    "\tThe command failed.\n"));
 	rxvt_destroy_termwin (r, LTAB(r));
-	LTAB(r) --;
 	return;
     }
     rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR,"page %d's cmd_fd is %d\n", LTAB(r), LVTS(r)->cmd_fd));
@@ -1432,9 +1446,9 @@ rxvt_append_page( rxvt_t* r, int profile,
      * Auto show tabbar if we have exactly two tabs.
      */
     if(
-	 !r->tabBar.state && LTAB(r) == 1
-	 && ISSET_OPTION(r, Opt2_autohideTabbar)
-	 && rxvt_tabbar_show( r )
+	    !r->tabBar.state && LTAB(r) == 1
+	    && ISSET_OPTION(r, Opt2_autohideTabbar)
+	    && rxvt_tabbar_show( r )
       )
 	rxvt_resize_on_subwin( r, SHOW_TABBAR);
 
@@ -1458,9 +1472,7 @@ rxvt_remove_page (rxvt_t* r, short page)
 {
     register int    i;
 
-
-    rxvt_dbgmsg ((DBG_VERBOSE, DBG_TABBAR,"remove_page(%d)\n", page));
-
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_TABBAR,"rxvt_remove_page (r, %d)\n", page));
 
     /* clean utmp/wtmp entry */
 #ifdef UTMP_SUPPORT
@@ -1475,10 +1487,10 @@ rxvt_remove_page (rxvt_t* r, short page)
     assert (PVTS(r, page)->cmd_fd >= 0);
     close (PVTS(r, page)->cmd_fd);
 
-    if (PVTS(r, page)->v_buffer)
+    if (PVTS(r, page)->inbuf_base)
     {
-	rxvt_free (PVTS(r, page)->v_buffer);
-	PVTS(r, page)->v_buffer = NULL;
+	rxvt_free (PVTS(r, page)->inbuf_base);
+	PVTS(r, page)->inbuf_base = NULL;
     }
 
     /* free screen structure */
@@ -1487,18 +1499,44 @@ rxvt_remove_page (rxvt_t* r, short page)
     /* destroy the virtual terminal window */
     rxvt_destroy_termwin (r, page);
 
+    if (LTAB (r) == 0)
+    {
+	/* quit the last the terminal, exit the application */
+	rxvt_free (r->vts);
+	SET_NULL (r->vts);
+	rxvt_clean_exit (r);
+    }
+
     /* update total number of tabs */
     LTAB(r)--;
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR, "\tThe last tab is %d.", LTAB(r)));
 
-    /* quit the last the terminal, exit the application */
-    if( LTAB(r) < 0 )
-	rxvt_clean_exit (r);
-
+    if (FVTAB(r) > page)
+	FVTAB(r)--;
+    if (LVTAB(r) > page)
+	LVTAB(r)--;
+    /* Reorganize the tabs array. */
     /* update TermWin and tab_widths */
     for (i = page; i <= LTAB(r); i++)
     {
 	PVTS(r, i) = PVTS(r, i+1);
+	PVTS(r, i)->vts_idx = i;
 	refresh_tabbar_tab( r, i);
+    }
+
+    {
+	term_t** temp_vts = rxvt_realloc (r->vts, (LTAB (r) + 1) * sizeof (term_t*));
+	if (temp_vts)
+	{
+	    r->vts = temp_vts;
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR,
+			"\tThe tab array has been reallocated to (%d * sizeof (term_t*)).\n", LTAB(r) + 1));
+	}
+	else
+	    rxvt_dbgmsg ((DBG_WARN, DBG_TABBAR,
+			"\tAfter removing a tab, the tab array could not be reallocated. If you see often this message, this can be a problem.\n"));
+	// if the realloc failed, this is not fatale as we can imagine it may be reallocated
+	// at the next change on tabs but display all the same a warning.
     }
 
     /* update selection */
@@ -1512,9 +1550,11 @@ rxvt_remove_page (rxvt_t* r, short page)
      * Must be careful here!!!
      */
     /* update previous active tab */
-    if (PTAB(r) > page) PTAB(r)--;
+    if (PTAB(r) > page)
+	PTAB(r)--;
     /* in case PTAB is invalid */
-    if (PTAB(r) > LTAB(r)) PTAB(r) = LTAB(r);
+    if (PTAB(r) > LTAB(r))
+	PTAB(r) = LTAB(r);
 
     /* update active tab */
     if( ATAB(r) == page )
@@ -1523,17 +1563,19 @@ rxvt_remove_page (rxvt_t* r, short page)
 	ATAB(r) = PTAB(r);
 
 	/* Make the previous active tab the previous / next tab if possible. */
-	if( PTAB(r) > 0 ) PTAB(r)--;
-	else if (PTAB(r) < LTAB(r) ) PTAB(r)++;
+	if( PTAB(r) > 0 )
+	    PTAB(r)--;
+	else if (PTAB(r) < LTAB(r) )
+	    PTAB(r)++;
     }
-    else if( ATAB(r) > page) ATAB(r)--;
+    else if( ATAB(r) > page)
+	ATAB(r)--;
 
     /* always set mapped flag */
     AVTS(r)->mapped = 1;
 
     /* Adjust the number of FD's we select() for.  */
     rxvt_adjust_fd_number(r);
-
 
     /* adjust visible tabs */
     rxvt_tabbar_set_visible_tabs (r, True);
@@ -1924,37 +1966,43 @@ rxvt_tabbar_visible (rxvt_t* r)
 void
 rxvt_tabbar_expose (rxvt_t* r, XEvent *ev)
 {
-    Region region;
-    
-    UNSET_REGION(region);
+	Region region;
+	UNSET_REGION(region);
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR,  "rxvt_tabbar_expose (r, ev)\n"));
 
-    if( ev && ev->type == Expose)
-    {
-	region = XCreateRegion();
-
-	do
+	if( ev && ev->type == Expose)
 	{
-	    XRectangle rect;
+		region = XCreateRegion();
 
-	    rect.x	= ev->xexpose.x;
-	    rect.y	= ev->xexpose.y;
-	    rect.width	= ev->xexpose.width;
-	    rect.height	= ev->xexpose.height;
+		do
+		{
+			XRectangle rect;
+			Region region_temp = XCreateRegion ();
 
-	    XUnionRectWithRegion( &rect, region, region);
-	} while( XCheckTypedWindowEvent( r->Xdisplay, r->tabBar.win,
-		    Expose, ev));
-    }
-    else XClearWindow (r->Xdisplay, r->tabBar.win);
+			rect.x	= ev->xexpose.x;
+			rect.y	= ev->xexpose.y;
+			rect.width	= ev->xexpose.width;
+			rect.height	= ev->xexpose.height;
 
-    /* draw the tabs and blank space*/
-    rxvt_draw_tabs(r, region);
+			/* Not sure this is necessary,
+			 * but I had a segmentation fault issue without this. */
+			XUnionRectWithRegion( &rect, region_temp, region_temp);
+			XUnionRegion(region_temp, region, region);
+			XDestroyRegion( region_temp );
+		}
+		while( XCheckTypedWindowEvent( r->Xdisplay, r->tabBar.win,
+					Expose, ev));
+	}
+	else XClearWindow (r->Xdisplay, r->tabBar.win);
 
-    /* draw the buttons */
-    rxvt_tabbar_draw_buttons (r);
+	/* draw the tabs and blank space*/
+	rxvt_draw_tabs(r, region);
 
-    if (IS_REGION(region))
-	XDestroyRegion( region );
+	/* draw the buttons */
+	rxvt_tabbar_draw_buttons (r);
+
+	if (IS_REGION(region))
+		XDestroyRegion( region );
 }
 
 

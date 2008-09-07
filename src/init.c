@@ -12,7 +12,7 @@
  * Copyright (c) 2003-2004  Marc Lehmann <pcg@goof.com>
  * Copyright (c) 2004-2006  Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006  Gautam Iyer <gi1242@users.sourceforge.net>
- * Copyright (C) 2008	 	 Jehan Hysseo <hysseo@users.sourceforge.net>
+ * Copyright (C) 2008		 Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -607,7 +607,9 @@ const char *const xa_names[NUM_XA] = {
 #ifdef HAVE_X11_SM_SMLIB_H
     "SM_CLIENT_ID",
 #endif
+#ifdef USE_XIM
     "WM_LOCALE_NAME",
+#endif
 #ifdef TRANSPARENT
     "_XROOTPMAP_ID",
     "_XSETROOT_ID",
@@ -651,16 +653,12 @@ rxvt_init_vars(rxvt_t *r)
 
     h = r->h = (struct rxvt_hidden *)rxvt_calloc(1, sizeof(struct rxvt_hidden));
 
-    for (i = 0; i < MAX_PAGES; i ++)
-    {
-	/* Initialize vts_idx for each term_t structure */
-	r->vterm[i].vts_idx = -1;
-	/* Initialize each vts pointer */
-	SET_NULL(r->vts[i]);
-    }
+	 SET_NULL (r->vts);
 
     SET_NULL(r->Xdisplay);
+#ifdef USE_XIM
     SET_NULL(r->TermWin.fontset);
+#endif
     SET_NULL(r->TermWin.font);
 #ifdef MULTICHAR_SET
     SET_NULL(r->TermWin.mfont);
@@ -709,8 +707,10 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(h->MenuBar.title);
 # endif
 
+# ifdef USE_XIM
     SET_NULL(h->Input_Context);
-    /* SET_NULL(h->v_bufstr); */
+# endif
+    /* SET_NULL(h->inbuf_start); */
     SET_NULL(h->buffer);
 
 # ifdef TRANSPARENT
@@ -1126,7 +1126,7 @@ rxvt_init_resources(rxvt_t* r, int argc, const char *const *argv)
     if( rs[Rs_minVisibleTabs] )
     {
 	register int	n = atoi( rs[Rs_minVisibleTabs] );
-	r->TermWin.minVisibleTabs = (n >= 2 && n <= MAX_PAGES) ?
+	r->TermWin.minVisibleTabs = (n >= 2) ?
 	    n : DEFAULT_MIN_VISIBLE_TABS;
     }
     else r->TermWin.minVisibleTabs = DEFAULT_MIN_VISIBLE_TABS;
@@ -1595,6 +1595,7 @@ rxvt_init_env(rxvt_t *r)
 void
 rxvt_init_xlocale(rxvt_t *r)
 {
+#ifdef USE_XIM
     if (IS_NULL(r->h->locale))
 	rxvt_msg (DBG_ERROR, DBG_INIT, "Setting locale failed.");
     else
@@ -1605,7 +1606,7 @@ rxvt_init_xlocale(rxvt_t *r)
 
 	if (XSupportsLocale() != True)
 	{
-	    rxvt_msg (DBG_ERROR, DBG_INIT, "The locale %s is not supported by Xlib", r->h->locale);
+	    rxvt_msg (DBG_ERROR, DBG_INIT, "The locale is not supported by Xlib");
 	    return;
 	}
 	rxvt_IM_set_fontset (r, 0);
@@ -1613,15 +1614,12 @@ rxvt_init_xlocale(rxvt_t *r)
 	/* see if we can connect yet */
 	rxvt_IM_init_callback (r->Xdisplay, NULL, NULL);
 
-#if defined(XtSpecificationRelease) && XtSpecificationRelease >= 6 && defined(X_HAVE_UTF8_STRING)
-#define USE_XRegisterIMInstantiateCallback
-	// Taken from xterm.
 	/* To avoid Segmentation Fault in C locale: Solaris only? */
 	if (STRCMP(r->h->locale, "C"))
 	    XRegisterIMInstantiateCallback(r->Xdisplay, NULL, NULL,
 		NULL, rxvt_IM_init_callback, NULL);
-#endif
     }
+#endif
 }
 
 /*----------------------------------------------------------------------*/
@@ -2771,30 +2769,63 @@ rxvt_get_termenv( const char *env )
 
 
 /* INTPROTO */
-void
+/*
+ * rxvt_init_vts (r, page, profile) will initialize a new page (term_t),
+ * accessible at r->vts[page] and set with 'profile'.
+ * It returns 1 on success, 0 on failure.
+ * Cases of failure can be:
+ * - The (vts) array's size could not be increased (allocation problem);
+ * - The term_t vts[page] could not be allocated;
+ * - 'page' is not valid: it must be between 0 and the last page + 1.
+ *   If it is less than the last page + 1, then all pages >= page are moved up.
+ */
+int
 rxvt_init_vts( rxvt_t *r, int page, int profile )
 {
 #ifdef TTY_GID_SUPPORT
     struct group*   gr = getgrnam( "tty" );
 #endif
-    register int    i;
+    if (page < 0 || page > LTAB(r) + 1)
+	return 0;
 
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "rxvt_init_vts (r, %d)\n", page));
+    LTAB(r)++;
+    {
+	/*
+	 * I increase vts's size and place the new page at the right place in it.
+	 */
+	term_t** temp_vts;
+	term_t* temp_vts_page;
 
-    assert( page < MAX_PAGES );
+	if ((temp_vts_page = rxvt_malloc (sizeof (term_t))) == NULL)
+	{
+	    LTAB(r)--;
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tThe terminal allocation failed. Returning. Last tab is %d.\n", LTAB(r)));
+	    return 0;
+	}
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tA new terminal has been allocated.\n"));
 
-    /* look for an unused term_t structure */
-    for( i = 0; i < MAX_PAGES; i ++ )
-	if( -1 == r->vterm[i].vts_idx )
-	    break;
-    assert( i != MAX_PAGES );
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "Find vterm[%d] for pointer vts[%d]\n", i, page));
+	if ((temp_vts = rxvt_realloc (r->vts, (LTAB (r) + 1) * sizeof (term_t*))) == NULL)
+	{
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tThe terminal array's reallocation to (%d * sizeof (term_t*)) failed.\n", LTAB(r) + 1));
+	    LTAB(r)--;
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tLast tab is now %d.\n", LTAB(r)));
+	    rxvt_free (temp_vts_page);
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tPreviously allocated terminal freed. Returning.\n"));
+	    return 0;
+	}
 
-    /* clear the term_t structure */
-    r->vts[page] = &(r->vterm[i]);
-    MEMSET( r->vts[page], 0, sizeof( r->vterm[0] ) );
+	r->vts = temp_vts;
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tThe terminal array has been reallocated to (%d * sizeof (term_t*)). The last tab is now %d.\n", LTAB(r) + 1, LTAB(r)));
 
-    /* set vts_idx for the vterm */
-    PVTS(r, page)->vts_idx = i;
+	if (page != LTAB (r))
+	    MEMMOVE (r->vts[page + 1], r->vts[page], (LTAB(r) - page) * sizeof (term_t*));
+
+	r->vts[page] = temp_vts_page;
+    }
+
+    PVTS(r, page)->vts_idx = page;
+    MEMSET( r->vts[page], 0, sizeof(term_t)); //r->vterm[0] ) );
 
     /* Set the profile number */
     PVTS(r, page)->profileNum	= profile;
@@ -2862,7 +2893,7 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 
     /* Get term_env type */
     PVTS(r, page)->termenv = rxvt_get_termenv (
-	r->h->rs[Rs_term_name] ? r->h->rs[Rs_term_name] : TERMENV);
+	    r->h->rs[Rs_term_name] ? r->h->rs[Rs_term_name] : TERMENV);
 
     /* Initialize PrivateModes and SavedModes */
     PVTS(r, page)->PrivateModes = PVTS(r, page)->SavedModes =
@@ -2918,28 +2949,20 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 
     /* Initialize input buffer */
     PVTS(r, page)->outbuf_start	= PVTS(r, page)->outbuf_end
-				= PVTS(r, page)->outbuf_base;
-    
-	 /* Initialize input buffer (new version with glyph index); */
-    //PVTS(r, page)->glyphbuf_ptr	= PVTS(r, page)->glyphbuf_end
-	//			= PVTS(r, page)->glyphbuf;
-    PVTS(r, page)->charbuf_start	= PVTS(r, page)->charbuf_end
-				= PVTS(r, page)->charbuf_base;
-	 SET_NULL( PVTS(r, i)->charbuf_escstart);
-	 SET_NULL( PVTS(r, i)->charbuf_escfail);
-    
+	= PVTS(r, page)->outbuf_base;
 
     /* Initialize write out buffer */
-    SET_NULL(PVTS(r, page)->v_buffer);
-    SET_NULL(PVTS(r, page)->v_bufstr);
-    SET_NULL(PVTS(r, page)->v_bufptr);
-    SET_NULL(PVTS(r, page)->v_bufend);
+    SET_NULL(PVTS(r, page)->inbuf_base);
+    SET_NULL(PVTS(r, page)->inbuf_start);
+    SET_NULL(PVTS(r, page)->inbuf_end);
+    PVTS(r, page)->inbuf_room = 0;
 
     /* Set screen structure initialization flag */
     PVTS(r, page)->init_screen = 0;
 
     /* Request a refresh */
     PVTS(r, page)->want_refresh = 1;
+    return 1;
 }
 
 
@@ -2949,7 +2972,8 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 void
 rxvt_destroy_termwin( rxvt_t *r, int page )
 {
-    assert (page < MAX_PAGES);
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "rxvt_destroy_termwin (r, %d)\n", page));
+    assert (page <= LTAB(r));
     assert (PVTS(r, page)->tab_title);
 
     rxvt_free (PVTS(r, page)->tab_title);
@@ -2983,24 +3007,22 @@ rxvt_destroy_termwin( rxvt_t *r, int page )
     }
 #endif
 
-    /* Set vterm index to -1, so that we know it's unused */
-    PVTS(r, page)->vts_idx = -1;
+    rxvt_free (PVTS(r, page));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tThe terminal %d has been successfully freed.\n", page));
 }
 
 
 
 /* rxvt_create_termwin() - create a terminal window */
 /* EXTPROTO */
-void
+int
 rxvt_create_termwin( rxvt_t *r, int page, int profile,
 	const char TAINTED *title )
 {
     long	    vt_emask;
 
-
-    assert( page < MAX_PAGES );
-
-    rxvt_init_vts( r, page, profile );
+    if (!rxvt_init_vts (r, page, profile))
+	return 0;
 
     /*
      * Set the tab title
@@ -3027,17 +3049,17 @@ rxvt_create_termwin( rxvt_t *r, int page, int profile,
     rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "Create VT %d (%dx%d+%dx%d) fg=%06lx, bg=%06lx\n", page, r->h->window_vt_x, r->h->window_vt_y, VT_WIDTH(r), VT_HEIGHT(r), r->pixColors[Color_fg], r->pixColors[Color_bg]));
 
     PVTS(r, page)->vt = XCreateSimpleWindow (r->Xdisplay, r->TermWin.parent,
-				r->h->window_vt_x, r->h->window_vt_y,
-				VT_WIDTH(r), VT_HEIGHT(r),
-				0,
-				r->pixColors[Color_fg],
-				r->pixColors[Color_bg]);
+	    r->h->window_vt_x, r->h->window_vt_y,
+	    VT_WIDTH(r), VT_HEIGHT(r),
+	    0,
+	    r->pixColors[Color_fg],
+	    r->pixColors[Color_bg]);
     assert (IS_WIN(PVTS(r, page)->vt));
 #ifdef XFT_SUPPORT
     if (ISSET_OPTION(r, Opt_xft))
     {
 	PVTS(r, page)->xftvt = XftDrawCreate (r->Xdisplay,
-	    PVTS(r, page)->vt, XVISUAL, XCMAP);
+		PVTS(r, page)->vt, XVISUAL, XCMAP);
 	assert (NOT_NULL(PVTS(r, page)->xftvt));
     }
 #endif
@@ -3048,7 +3070,7 @@ rxvt_create_termwin( rxvt_t *r, int page, int profile,
 
     /* define event mask fo the terminal window */
     vt_emask = (ExposureMask | ButtonPressMask | ButtonReleaseMask
-	| PropertyChangeMask);
+	    | PropertyChangeMask);
 #ifdef POINTER_BLANK
     if (ISSET_OPTION(r, Opt_pointerBlank))
 	vt_emask |= PointerMotionMask;
@@ -3062,7 +3084,7 @@ rxvt_create_termwin( rxvt_t *r, int page, int profile,
     if (ISSET_OPTION(r, Opt_transparent))
     {
 	XSetWindowBackgroundPixmap (r->Xdisplay, PVTS(r, page)->vt,
-	    ParentRelative);
+		ParentRelative);
     }
 #endif
 
@@ -3092,6 +3114,7 @@ rxvt_create_termwin( rxvt_t *r, int page, int profile,
 #endif
 
     XMapWindow (r->Xdisplay, PVTS(r, page)->vt);
+    return 1;
 }
 
 
