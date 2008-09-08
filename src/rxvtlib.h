@@ -41,6 +41,17 @@
 /* type of unicode_t */
 typedef uint32_t	unicode_t;
 
+#ifdef HAVE_ICONV_H
+// With iconv, characters will be encoded in "UCS-4-INTERNAL", Full Unicode.
+typedef uint32_t internal_char_t; 
+#else
+/* Without iconv, characters will be converted to wchar_t, which is often
+ * Unicode on most platform, though it is not required by the Unicode standard.
+ * Hence if possible, using iconv is preferred.
+ */
+typedef wchar_t internal_char_t;
+#endif
+
 
 /*****************************************************************************
  *                                 SECTION 2                                 *
@@ -769,6 +780,18 @@ typedef struct
 		    *outbuf_start,	/* current char */
 		    *outbuf_end;	/* End of read child's output */
     unsigned char   outbuf_base[BUFSIZ];
+
+    internal_char_t *charbuf_escstart,
+	    *charbuf_escfail,
+	    *charbuf_start,
+	    *charbuf_end;
+    internal_char_t charbuf_base[BUFSIZ];
+
+#ifdef HAVE_ICONV_H
+    iconv_t	    shift_state; // Shift state when using iconv.
+#else
+    mbstate_t* shift_state; // Multi-bite Shift state in C99 standard.
+#endif
 } term_t;
 
 #define TAB_MON_OFF 0            /* tab monitoring off */
