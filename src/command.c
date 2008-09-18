@@ -1759,6 +1759,214 @@ rxvt_check_cmdbuf (rxvt_t* r, int page)
     }
 }
 
+/* INTPROTO */
+/* rxvt_check_charbuf (r, p) manage the free space in the character buffer of the page p.
+ * It will move the used space in it to the beginning when needed.
+ */
+void
+rxvt_check_charbuf (rxvt_t* r, int page)
+{
+    assert (PVTS(r, page)->charbuf_base <= PVTS(r, page)->charbuf_end);
+
+    if (
+	    IS_NULL (PVTS(r, page)->charbuf_escstart)		    &&
+	    PVTS(r, page)->charbuf_start == PVTS(r, page)->charbuf_end
+       )
+    {
+	/*
+	 * If there is no data in the buffer, reset it to the beginning
+	 * of the buffer.
+	 */
+	PVTS(r, page)->charbuf_start = PVTS(r, page)->charbuf_end
+	    = PVTS(r, page)->charbuf_base;
+
+    }
+    else if (
+	    (PVTS(r, page)->charbuf_end - PVTS(r, page)->charbuf_base)
+	    == (BUFSIZ-1)						 &&
+	    (
+	     PVTS(r, page)->charbuf_escstart ?
+	     (PVTS(r, page)->charbuf_escstart > PVTS(r,page)->charbuf_base) :
+	     (PVTS(r, page)->charbuf_start > PVTS(r, page)->charbuf_base)
+	    )
+	    )
+    {
+	/*
+	 * If there is space at beginning of the buffer, but not space at the
+	 * end of the buffer, move the content of buffer forward to free space
+	 */
+	internal_char_t	*start;
+	unsigned int	n, len;
+
+	start = PVTS(r, page)->charbuf_escstart ?
+	    PVTS(r, page)->charbuf_escstart : PVTS(r, page)->charbuf_start;
+
+	n   = start - PVTS(r, page)->charbuf_base;
+	len = PVTS(r, page)->charbuf_end - start;
+
+	assert (n == BUFSIZ - 1 - len);
+	assert (start < PVTS(r, page)->charbuf_end);
+
+	MEMMOVE (PVTS(r, page)->charbuf_base, start, len);
+
+	PVTS(r, page)->charbuf_start   -= n;
+	PVTS(r, page)->charbuf_end  -= n;
+	if( PVTS(r, page)->charbuf_escstart )
+	    PVTS(r, page)->charbuf_escstart -= n;
+	if( PVTS(r, page)->charbuf_escfail )
+	    PVTS(r, page)->charbuf_escfail -= n;
+    }
+}
+
+/*
+ * rxvt_convert_byte_to_char (r) loops through all tabs and converts as much data
+ * as possible into meaningful characters.
+ * The tab's raw buffer "outbuf" is emptied, while the associated character
+ * buffer "charbuf" is filled.
+ * It stops if there is not enough place in "charbuf" or if an incomplete
+ * character is met.
+ * Any invalid character in the current encoding is simply discarded with a
+ * warning.
+ */
+void
+rxvt_convert_byte_to_char (rxvt_t* r)
+{
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_convert_byte_to_char (r).\n"));
+    register int i;
+
+    for (i = 0; i <= LTAB (r); i++)
+    {
+	if (! rxvt_cmdbuf_has_input (r, i))
+	    /* when there is no raw byte input pending,
+	     * I just go to the next tab. */
+	    continue;
+
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tProcessing raw output from tab %d.\n", i));
+
+	/* 
+	 * count is the number of bytes read from the command file
+	 * descriptor/byte buffer.
+	 * countwc is the actual number of character read (with iconv, it has a
+	 * different meaning: it is the number of "non-reversible" conversions).
+	 */
+
+	size_t charbuf_room; // TODO Jehan: is it really bytes or chars which are needed here?
+	unsigned int countwc;
+#ifdef HAVE_ICONV_H
+	size_t byte_left;
+	char ** byte_buffer = (char**) &PVTS(r, i)->outbuf_start;
+#else
+	const char ** byte_buffer = (const char**) &PVTS(r, i)->outbuf_start;
+#endif
+	internal_char_t* last_charbuf_end = PVTS(r, i)->charbuf_end;
+
+	// I make sure the byte buffer ends with the null character.
+	*PVTS(r, i)->outbuf_end = '\0';
+
+	rxvt_check_charbuf (r, i);
+	byte_left = PVTS(r, i)->outbuf_end - PVTS(r,i)->outbuf_start;
+	// TODO Jehan: BUFSIZ or BUFSIZ - 1? Does not need a null char at end, so BUFSIZ, no?
+#ifdef HAVE_ICONV_H
+	// iconv needs the number of outputting bytes.
+	charbuf_room = (BUFSIZ - (PVTS(r, i)->charbuf_end - PVTS(r, i)->charbuf_base)) * sizeof (internal_char_t);
+#else
+	// mbrstowcs needs the number of outputting wide characters.
+	charbuf_room = BUFSIZ - (PVTS(r, i)->charbuf_end - PVTS(r, i)->charbuf_base);
+#endif
+
+#ifdef HAVE_ICONV_H
+	// Now I transform at most byte_left bytes into at most charbuf_room meaningful characters.
+	countwc = iconv (PVTS(r, i)->shift_state,
+		byte_buffer, &byte_left,
+		(char**) &PVTS(r, i)->charbuf_end, &charbuf_room);
+#else
+	// mbsrtowcs is locale dependant.
+	// Let's trust this POSIX function for the encoding conversion to Unicode in absence of iconv.
+	countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, byte_buffer, charbuf_room, PVTS(r, page)->shift_state);
+#endif
+
+#ifdef HAVE_ICONV_H
+	if (byte_left == 0)
+#else
+	if (IS_NULL (*byte_buffer))
+#endif
+	    /* 
+	     * The byte buffer has been fully consumed until the end.
+	     * So let's reset the buffer to base.
+	     */
+	    PVTS(r, i)->outbuf_start = PVTS(r, i)->outbuf_end = PVTS(r, i)->outbuf_base;
+	else if (countwc == -1)
+	{
+	    if (errno == EILSEQ)
+	    {
+		/*
+		 * The conversion to wide char has stopped on an invalid sequence.
+		 * In this case PVTS(r, i)->outbuf_start is left pointing to the invalid multibyte sequence.
+		 * PVTS(r, i)->charbuf_end is updated as wanted.
+		 * I simply increment the pointer and ends here.
+		 */
+#ifndef HAVE_ICONV_H
+		/* When not using iconv, EILSEQ can mean an invalid character,
+		 * but also an incomplete character! Hence if there are less
+		 * than 4 bytes at the end of outbuf, I just pass, because
+		 * I am not sure which case it is. When there are at least 4
+		 * bytes (I don't no any encoding with character bigger than 4
+		 * bytes), I am sure this is the invalid case, so I increment.
+		 */
+		if (PVTS(r, i)->outbuf_end - PVTS(r, i)->outbuf_start > 3)
+#endif
+		{
+		    rxvt_msg (DBG_WARN, DBG_COMMAND,
+			    "An invalid byte (value: %d) has been encountered and removed from tab %d.",
+			    i, **byte_buffer);
+		    (*byte_buffer)++;
+		}
+
+		/*while ((PVTS(r, i)->outbuf_end - PVTS(r, i)->outbuf_start) > 4
+			&& countwc == -1
+			&& *byte_buffer < (char *) PVTS(r, i)->outbuf_end)
+		{
+		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid byte has been encountered and removed in tab %d.", i));
+		    (*byte_buffer)++;
+		    countwc = mbsrtowcs (PVTS(r, i)->charbuf_end, byte_buffer, 1, NULL);
+		}*/
+		/* 
+		 * If we have less than 4 bytes to convert,
+		 * it is possible that we did not have a full character yet,
+		 * but maybe letter (depending on the current encoding).
+		 * Just let this like this and let's see at the next iteration.
+		 */
+	    }
+#ifdef HAVE_ICONV_H
+	    else if (errno == E2BIG || errno == EINVAL)
+		; // no real error, so nothing to do. Just exits.
+#endif
+	    else // should not occure: errno == EBADF (iconv) or some unexperted error!
+	    {
+		rxvt_msg (DBG_ERROR, DBG_COMMAND,  "In rxvt_convert_byte_to_char, mbsrtowcs failed with errno = %i. This should not occure.\n", errno);
+		assert (0);
+	    }
+
+	    // PVTS(r, i)->charbuf_end - last_charbuf_end characters have been written to the buffer.
+	    countwc = PVTS(r, i)->charbuf_end - last_charbuf_end;
+	}
+	/* 
+	 * The last case (without iconv) is when charbuf has been filled.
+	 * In such case, nothing to do.
+	 * All pointers are well set by mbsrtowcs.
+	 */
+
+	/* highlight inactive tab if there is some input */
+	if (
+		NOTSET_OPTION(r, Opt2_hlTabOnBell)	    &&
+		countwc > 0 &&
+		i != ATAB(r)
+	   )
+	{
+	    rxvt_tabbar_highlight_tab (r, i, False);
+	}
+    }   /* for loop */
+}
 
 /*
  * This function returns the number of bytes being read from a child
