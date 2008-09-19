@@ -193,7 +193,7 @@ void           rxvt_process_x_event          (rxvt_t*, XEvent*);
 #ifdef PRINTPIPE
 void           rxvt_process_print_pipe       (rxvt_t*, int);
 #endif
-void           rxvt_process_nonprinting      (rxvt_t*, int, unsigned char);
+void           rxvt_process_nonprinting      (rxvt_t*, int, internal_char_t);
 void           rxvt_process_escape_vt52      (rxvt_t*, int, unsigned char);
 void           rxvt_process_escape_seq       (rxvt_t*, int);
 void           rxvt_process_csi_seq          (rxvt_t*, int);
@@ -1646,6 +1646,15 @@ rxvt_cmdbuf_has_input( rxvt_t *r, int page )
 	PVTS(r, page)->outbuf_start < PVTS(r, page)->outbuf_end;
 }
 
+/* Returns true if there is output pending in PVTS(r, page)->charbuf. */
+int static inline
+mrxvt_page_has_output (rxvt_t *r, int page)
+{
+    return PVTS(r, page)->charbuf_escfail ?
+	PVTS(r, page)->charbuf_escfail < PVTS(r, page)->charbuf_end	    :
+	PVTS(r, page)->charbuf_start < PVTS(r, page)->charbuf_end;
+}
+
 /*
  * Find a tab with some output, and return it.
  *
@@ -1697,6 +1706,56 @@ rxvt_find_cmd_child (rxvt_t* r)
     return -1; /* not found */
 }
 
+/*
+ * Find a tab with some output, and return it.
+ *
+ * Bug #1102791 (Carsten Menke): A really busy tab could starve all others. So
+ * use a round robin to go through all tabs.
+ */
+/* INTPROTO */
+int
+mrxvt_find_child_with_output (rxvt_t* r)
+{
+    register int    k;
+    static int	    lastProcessed = 0;  /* tab we processed last time */
+
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "mrxvt_find_child_with_output (r).\n" ));
+
+    /*
+     * See if the active tab has input before anything else.
+     */
+    if (mrxvt_page_has_output (r, ATAB(r)) )
+	return ATAB(r);
+
+    /*
+     * Now look for data from other tabs. Remember the tab we found data from so
+     * that we can start from the next tab on the next call to this function.
+     */
+    if( lastProcessed > LTAB(r) )   /* Sanity check */
+	lastProcessed = LTAB(r);
+
+    /* start from the next tab of last processed tab */
+    k = lastProcessed + 1;
+
+    do
+    {
+	if( k > LTAB(r) )	/* round-robin */
+	    k = 0;
+
+	assert( PVTS(r, k)->outbuf_base <= PVTS(r, k)->outbuf_end );
+
+	/* already have something in some page's buffer */
+	if (mrxvt_page_has_output (r, k) )
+	{
+	    lastProcessed = k;
+	    return k;
+	}
+
+    }
+    while (k++ != lastProcessed);	/* until we hit the last child again */
+
+    return -1; /* not found */
+}
 
 /* INTPROTO */
 /* rxvt_check_cmdbuf (r, p) manage the free space in the buffer of the page p.
@@ -2884,6 +2943,392 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
 }
 /*}}} */
 
+/*
+ * rxvt_cmd_getc() - Return next input character.
+ *
+ * If *p_page == -1, then *p_page is set to a tab which returned input, and the
+ * character is returned. Calling rxvt_cmd_getc() with *p_page = -1 is a good
+ * thing, and should be done when possible.
+ *
+ * If *p_page != -1, we will either return a character from the tab *p_page, or
+ * fail by setting *p_page to -1 and return 0. If the tab *p_page is dead on
+ * entry, we will fail only when there is no data available. If the tab *p_page
+ * is alive on entry, then we will fail for whatever reason we like (e.g. X
+ * events are pending).
+ */
+
+/* INTPROTO */
+internal_char_t
+rxvt_next_output_char (rxvt_t *r, int* p_page)
+{
+    int		    selpage = *p_page, retpage;
+    fd_set	    readfds;
+    int		    quick_timeout, select_res;
+#ifdef POINTER_BLANK
+    int		    want_motion_time = 0;
+#endif
+#ifdef CURSOR_BLINK
+    int		    want_keypress_time = 0;
+#endif
+#if defined(POINTER_BLANK) || defined(CURSOR_BLINK) || defined(TRANSPARENT)
+    struct timeval  tp;
+#endif
+    struct timeval  value;
+    struct rxvt_hidden *h = r->h;
+    register int    i;
+
+
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_COMMAND,  "Entering rxvt_cmd_getc on page %d\n", *p_page));
+
+
+    /* loop until we can return something */
+    for (;;)
+    {
+	/* check for inactivity */
+	for (i = 0; i <= LTAB(r); i ++)
+	    rxvt_monitor_tab(r,i);
+
+#if defined(POINTER_BLANK) || defined(CURSOR_BLINK) || defined(TRANSPARENT)
+	/* presume == 0 implies time not yet retrieved */
+	tp.tv_sec = tp.tv_usec = 0;
+#endif	/* POINTER_BLANK || CURSOR_BLINK || TRANSPARENT*/
+#ifdef CURSOR_BLINK
+	want_keypress_time = 0;
+#endif	/* CURSOR_BLINK */
+#ifdef POINTER_BLANK
+	if (ISSET_OPTION(r, Opt_pointerBlank))
+	    want_motion_time = 0;
+#endif	/* POINTER_BLANK */
+
+
+	if (selpage == -1)
+	{
+	    /* Process all pending X events */
+	    while( XPending(r->Xdisplay) )
+	    {
+		XEvent	  xev;
+
+		XNextEvent(r->Xdisplay, &xev);
+
+#ifdef CURSOR_BLINK
+		if (ISSET_OPTION(r, Opt_cursorBlink) &&
+		    KeyPress == xev.type)
+		{
+		    if (h->hidden_cursor)
+		    {
+			rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** hide cursor on keypress\n"));
+			h->hidden_cursor = 0;
+			AVTS(r)->want_refresh = 1;
+		    }
+		    want_keypress_time = 1;
+		}
+#endif	/* CURSOR_BLINK */
+
+#ifdef POINTER_BLANK
+		if (ISSET_OPTION(r, Opt_pointerBlank) &&
+		    (h->pointerBlankDelay > 0))
+		{
+		    if (MotionNotify == xev.type ||
+			ButtonPress == xev.type ||
+			ButtonRelease == xev.type )
+		    {
+			/* only work for current active tab */
+			if (AVTS(r)->hidden_pointer)
+			    rxvt_pointer_unblank(r, ATAB(r));
+			want_motion_time = 1;
+		    }
+		    /* only work for current active tab */
+		    if (KeyPress == xev.type && !AVTS(r)->hidden_pointer)
+			rxvt_pointer_blank(r, ATAB(r));
+		}
+#endif	/* POINTER_BLANK */
+
+#ifdef USE_XIM
+		if (NOT_NULL(r->h->Input_Context))
+		{
+		    if (!XFilterEvent(&xev, xev.xany.window))
+			rxvt_process_x_event(r, &xev);
+		    h->event_type = xev.type;
+		}
+		else
+#endif	/* USE_XIM */
+		{
+		    rxvt_process_x_event (r, &xev);
+		}
+	    }   /* while ((XPending(r->Xdisplay)) */
+	} /* if( selpage == -1 ) */
+	else if( !PVTS(r, selpage)->dead && XPending( r->Xdisplay ) )
+	{
+	    /*
+	     * selpage != -1 on an alive tab, and X events are pending. If this
+	     * tab produces lots of output, it could potentially choke
+	     * everything else. Thus we return a failure, so the caller will
+	     * rxvt_set_escfail() and fall back to rxvt_main_loop(). We will be
+	     * called again with selpage == -1, when we can process X events.
+	     */
+	    *p_page = -1;
+	    return 0;
+	}
+
+	/*
+	 * We are done processing our X events. Check to see if we have any data
+	 * pending in our input buffer.
+	 */
+	if (selpage != -1 && mrxvt_page_has_output (r, selpage))
+	    return *(PVTS(r, selpage)->charbuf_start)++;
+
+	if (selpage == -1 && -1 != (retpage = mrxvt_find_child_with_output (r)))
+	{
+	    /*
+	     * In case -1 == selpage we are free to return data from any tab we
+	     * choose. Note, that mrxvt_find_child_with_output () will favor returning the
+	     * active tab.
+	     */
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_find_child_with_output returned page %d.\n", retpage));
+
+	    *p_page = retpage;
+	    return *(PVTS(r, *p_page)->charbuf_start)++;
+	}
+
+
+	/*
+	 * The command input buffer is empty and we have no pending X events.
+	 * We call select() to wait until some data is available.
+	 */
+#ifdef CURSOR_BLINK
+	if (want_keypress_time)
+	{
+	    /* reset last cursor change time on keypress event */
+	    (void) gettimeofday (&tp, NULL);
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "** init cursor time on keypress\n"));
+	    h->lastcursorchange.tv_sec = tp.tv_sec;
+	    h->lastcursorchange.tv_usec = tp.tv_usec;
+	}
+#endif	/* CURSOR_BLINK */
+
+#ifdef POINTER_BLANK
+	if (ISSET_OPTION(r, Opt_pointerBlank) && want_motion_time)
+	{
+	    (void) gettimeofday (&tp, NULL);
+	    h->lastmotion.tv_sec = tp.tv_sec;
+	    h->lastmotion.tv_usec = tp.tv_usec;
+	}
+#endif	/* POINTER_BLANK */
+
+	quick_timeout = rxvt_check_quick_timeout (r);
+	quick_timeout = rxvt_adjust_quick_timeout (r, quick_timeout, &value);
+
+	/* Now begin to read in from children's file descriptors */
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Waiting for %lumu for child\n", 
+		      quick_timeout ? value.tv_sec * 1000000LU + value.tv_usec : ULONG_MAX));
+
+	/* Prepare to read in from children's file descriptors */
+	FD_ZERO(&readfds);
+	FD_SET(r->Xfd, &readfds);
+
+	for (i = 0; i <= LTAB(r); i ++)
+	{
+	    /* remember to skip held childrens */
+	    if ( PVTS(r, i)->hold > 1 )
+	    {
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+			    " not listening on vt[%d].cmd_fd (dead)\n", i));
+		continue;
+	    }
+	    else if ( PVTS(r, i)->gotEIO )
+	    {
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+			    " not listening on vt[%d].cmd_fd (EIO)\n", i));
+		PVTS(r, i)->gotEIO = 0;
+		continue;
+	    }
+
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,
+			" listening on vt[%d].cmd_fd = %d\n",
+			i, PVTS(r, i)->cmd_fd));
+	    FD_SET(PVTS(r, i)->cmd_fd, &readfds);
+
+	    /* Write out any pending output to child */
+	    if( PVTS(r, i)->inbuf_start < PVTS(r, i)->inbuf_end )
+		rxvt_tt_write(r, i, NULL, 0);
+	}
+
+#ifdef HAVE_X11_SM_SMLIB_H
+	if (-1 != r->TermWin.ice_fd)
+	    FD_SET(r->TermWin.ice_fd, &readfds);
+#endif
+
+#ifdef USE_FIFO
+	if( r->fifo_fd != -1 )
+	    FD_SET( r->fifo_fd, &readfds );
+#endif
+
+	rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
+		    "Calling select( num_fds=%d, timeout=%06du, &readfds)",
+		    r->num_fds,
+		    quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1
+		    ));
+	select_res = select( r->num_fds, &readfds, NULL, NULL,
+			(quick_timeout ? &value : NULL) );
+	rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
+		    "done (timeout %06du). Return %d\n",
+		    quick_timeout ? value.tv_sec * 1000000 + value.tv_usec : -1,
+		    select_res ));
+
+	if( select_res > 0 )
+	{
+	    /* Select succeeded. Check if we have new Xevents first. */
+	    if( 0 && selpage == -1 && XPending( r->Xdisplay ) > 25)
+	    {
+		rxvt_dbgmsg(( DBG_DEBUG, DBG_COMMAND,
+			"%d xevents to processes. Continuing\n",
+			XPending( r->Xdisplay ) ));
+		continue;
+	    }
+
+	    /* Read whatever input we can from child fd's*/
+	    rxvt_process_children_cmdfd (r, &readfds);
+
+#ifdef HAVE_X11_SM_SMLIB_H
+	    /*
+	     * ICE file descriptor must be processed after we process all file
+	     * descriptors of children. Otherwise, if a child exit,
+	     * IceProcessMessages may hang and make the entire terminal
+	     * unresponsive.
+	     */
+	    if(
+		 -1 != r->TermWin.ice_fd &&
+		 FD_ISSET (r->TermWin.ice_fd, &readfds)
+	      )
+		rxvt_process_ice_msgs (r);
+#endif
+
+#ifdef USE_FIFO /* {{{ Execute macros read from the fifo */
+	    if( -1 != r->fifo_fd  && FD_ISSET(r->fifo_fd, &readfds))
+	    {
+		ssize_t	len;
+		int	nbytes;
+
+		nbytes = sizeof(r->fifo_buf) - (r->fbuf_ptr - r->fifo_buf) - 1;
+		assert( nbytes > 0 );
+		
+		errno = 0;
+		len = read( r->fifo_fd, r->fbuf_ptr, nbytes );
+		
+		if( errno )
+		{
+		    rxvt_msg (DBG_ERROR, DBG_COMMAND, "Error: reading fifo %s", strerror (errno));
+		}
+
+		if( len == 0 )
+		{
+		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Reopening fifo %s\n", r->fifo_name ));
+		    close( r->fifo_fd );
+		    r->fifo_fd = open( r->fifo_name, O_RDONLY|O_NDELAY );
+		    rxvt_adjust_fd_number( r );
+
+		    /* Flush the fifo buffer */
+		    r->fbuf_ptr = r->fifo_buf;
+		}
+
+		else if( len > 0 )
+		{
+		    char	astr[FIFO_BUF_SIZE];
+		    char	*fptr = r->fifo_buf,
+				*aptr;
+		    action_t    action;
+
+		    SET_NULL( action.str );
+
+		    r->fbuf_ptr += len;	    /* Point to end of fifo_buf */
+
+		    for(;;)
+		    {
+			aptr = astr;
+			while( fptr < r->fbuf_ptr && *fptr && *fptr != '\n' )
+			    *(aptr++) = *(fptr++);
+
+			if( fptr < r->fbuf_ptr && *fptr == '\n' )
+			{
+			    /* Got complete action. Execute it */
+			    *aptr = 0;
+			    if( rxvt_set_action( &action, astr ) )
+				rxvt_dispatch_action( r, &action, NULL );
+
+			    fptr++; /* Advance to next char */
+			}
+
+			else
+			{
+			    /*
+			     * Incomplete action. Copy it to the fifo buffer and
+			     * break out
+			     */
+			    MEMCPY( r->fifo_buf, astr, aptr - astr );
+			    r->fbuf_ptr = r->fifo_buf + (aptr - astr);
+			    break;
+			}
+
+		    }
+
+		    rxvt_free( action.str );
+		}
+	    }
+#endif/*USE_FIFO}}}*/
+
+	    /*
+	     * Now figure out if we have something to return.
+	     */
+	    if( selpage != -1 && mrxvt_page_has_output (r, selpage))
+		return *(PVTS(r, selpage)->charbuf_start)++;
+
+	    /* No input from specified child. Try others. */
+	    else if( (retpage = mrxvt_find_child_with_output (r)) != -1 )
+	    {
+		if( selpage != -1 && selpage != retpage )
+		{
+		    /*
+		     * Specified child has nothing to return, but some other
+		     * child has data to return. We set retpage = -1, and return
+		     * 0.
+		     */
+		    *p_page = -1;
+		    return 0;
+		}
+		else
+		{
+		    /* No child specified, and we have input from some child */
+		    *p_page = retpage;
+		    return *(PVTS(r, retpage)->charbuf_start)++;
+		}
+	    } /* else if( (retpage = rxvt_find_cmd_child (r)) != -1 ) */
+	} /* if( select_res >= 0 ) */
+
+	/*
+	 * If we get here, we either have a select() error, or no tabs had any
+	 * input. Check to see if something died.
+	 */
+	if( r->ndead_childs || select_res == -1 )
+	    rxvt_mark_dead_childs( r );
+
+	if( r->cleanDeadChilds )
+	{
+	    /* Ok. Something died. */
+	    *p_page = -1;
+	    return 0;
+	} /* if( r->cleanDeadChilds ) */
+
+
+	/*
+	 * Nothing to return. Screen refresh, and call select() again.
+	 */
+	rxvt_refresh_vtscr_if_needed( r );
+
+    }	/* for(;;) */
+
+    /* NOT REACHED */
+}
+/*}}} */
 
 /* EXTPROTO */
 void
@@ -4978,10 +5423,34 @@ rxvt_set_escfail( rxvt_t *r, int page, int nchars )
 	PVTS(r, page)->outbuf_start = PVTS(r, page)->outbuf_escstart;
 }
 
+void
+mrxvt_set_escfail( rxvt_t *r, int page, int nchars )
+{
+    assert( PVTS(r, page)->charbuf_escstart );
+
+    rxvt_check_charbuf ( r, page );
+    PVTS(r, page)->charbuf_escfail = PVTS(r, page)->charbuf_start + nchars - 1;
+
+    if( PVTS(r, page)->charbuf_escfail > PVTS(r, page)->charbuf_base + BUFSIZ-3 )
+    {
+	/*
+	 * Escape sequence was longer than BUFSIZ. Just skip the escape
+	 * character and go on like normal
+	 */
+	PVTS(r, page)->charbuf_start = PVTS(r, page)->charbuf_escstart + 1;
+	SET_NULL( PVTS(r, page)->charbuf_escstart );
+	SET_NULL( PVTS(r, page)->charbuf_escfail );
+    }
+
+    else
+	/* Fall back to start of escape sequence */
+	PVTS(r, page)->charbuf_start = PVTS(r, page)->charbuf_escstart;
+}
+
 /*{{{ process non-printing single characters */
 /* INTPROTO */
 void
-rxvt_process_nonprinting(rxvt_t* r, int page, unsigned char ch)
+rxvt_process_nonprinting (rxvt_t* r, int page, internal_char_t ch)
 {
     switch (ch)
     {
@@ -5035,6 +5504,90 @@ rxvt_process_nonprinting(rxvt_t* r, int page, unsigned char ch)
 /* INTPROTO */
 void
 rxvt_process_escape_vt52(rxvt_t* r, int page, unsigned char ch)
+{
+    int	    row, col;
+    int	    readpage = page;
+
+    switch (ch)
+    {
+	case 'A':	/* cursor up */
+	    rxvt_scr_gotorc(r, page, -1, 0, R_RELATIVE | C_RELATIVE);
+	    break;
+
+	case 'B':	/* cursor down */
+	    rxvt_scr_gotorc(r, page, 1, 0, R_RELATIVE | C_RELATIVE);
+	    break;
+
+	case 'C':	/* cursor right */
+	    rxvt_scr_gotorc(r, page, 0, 1, R_RELATIVE | C_RELATIVE);
+	    break;
+
+	case 'D':	/* cursor left */
+	    rxvt_scr_gotorc(r, page, 0, -1, R_RELATIVE | C_RELATIVE);
+	    break;
+
+	case 'H':	/* cursor home */
+	    rxvt_scr_gotorc(r, page, 0, 0, 0);
+	    break;
+
+	case 'I':	/* cursor up and scroll down if needed */
+	    rxvt_scr_index(r, page, DN);
+	    break;
+
+	case 'J':	/* erase to end of screen */
+	    rxvt_scr_erase_screen(r, page, 0);
+	    break;
+
+	case 'K':	/* erase to end of line */
+	    rxvt_scr_erase_line(r, page, 0);
+	    break;
+
+	case 'Y':	    /* move to specified row and col */
+	    /* full command is 'ESC Y row col' where row and col
+	    ** are encoded by adding 32 and sending the ascii
+	    ** character.  eg. SPACE = 0, '+' = 13, '0' = 18,
+	    ** etc.
+	    */
+	    row = rxvt_cmd_getc(r, &readpage) - ' ';
+	    if( readpage == -1 )
+	    {
+		rxvt_set_escfail( r, page, 2 );
+		break;
+	    }
+
+	    col = rxvt_cmd_getc(r, &readpage) - ' ';
+	    if( readpage == -1 )
+	    {
+		rxvt_set_escfail( r, page, 1 );
+		break;
+	    }
+
+	    rxvt_scr_gotorc(r, page, row, col, 0);
+	    break;
+
+	case 'Z':	/* identify the terminal type */
+	    /* I am a VT100 emulating a VT52 */
+	    rxvt_tt_printf(r, page, "\033/Z");
+	    break;
+
+	case '<':	/* turn off VT52 mode */
+	    PrivMode(0, PrivMode_vt52, page);
+	    break;
+
+	case 'F':    	/* use special graphics character set */
+	case 'G':	   /* use regular character set */
+	    /* unimplemented */
+	    break;
+
+	case '=':    	/* use alternate keypad mode */
+	case '>':	   /* use regular keypad mode */
+	    /* unimplemented */
+	    break;
+    }
+}
+
+void
+mrxvt_process_escape_vt52(rxvt_t* r, int page, internal_char_t ch)
 {
     int	    row, col;
     int	    readpage = page;
@@ -5308,6 +5861,194 @@ rxvt_process_escape_seq(rxvt_t* r, int page)
 }
 /*}}} */
 
+/*{{{ process escape sequences */
+/* INTPROTO */
+void
+mrxvt_process_escape_seq (rxvt_t* r, int page)
+{
+    int		    readpage = page;
+    internal_char_t   c,
+		    ch = rxvt_next_output_char (r, &readpage);
+
+    if (readpage == -1)
+    {
+	mrxvt_set_escfail( r, page, 1 );
+	return;
+    }
+
+    if (ISSET_PMODE(r, page, PrivMode_vt52))
+    {
+	mrxvt_process_escape_vt52(r, page, ch);
+	return;
+    }
+
+    switch (ch)
+    {
+	/* case 1:	do_tek_mode (); break; */
+	case '#':
+	    c = rxvt_next_output_char (r, &readpage);
+
+	    if( readpage == -1 )
+		mrxvt_set_escfail( r, page, 1 );
+	    else if( c == 8 )
+		rxvt_scr_E(r, readpage); // TODO Jehan
+
+	    break;
+
+	case '(':
+	    c = rxvt_next_output_char (r, &readpage);
+
+	    if (readpage == -1)
+		mrxvt_set_escfail( r, page, 1 );
+	    else
+		rxvt_scr_charset_set(r, page, 0, (unsigned int) c );
+	    break;
+
+	case ')':
+	    c = rxvt_next_output_char (r, &readpage);
+
+	    if (readpage == -1)
+		mrxvt_set_escfail( r, page, 1 );
+	    else
+		rxvt_scr_charset_set(r, page, 1, (unsigned int) c);
+
+	    break;
+
+	case '*':
+	    c = rxvt_next_output_char (r, &readpage);
+
+	    if( readpage == -1 )
+		mrxvt_set_escfail( r, page, 1 );
+	    else
+		rxvt_scr_charset_set(r, page, 2, (unsigned int) c);
+
+	    break;
+
+	case '+':
+	    c = rxvt_next_output_char (r, &readpage);
+
+	    if (readpage == -1)
+		mrxvt_set_escfail( r, page, 1 );
+	    else
+		rxvt_scr_charset_set(r, page, 3, (unsigned int) c);
+
+	    break;
+
+#ifdef MULTICHAR_SET
+	case '$':
+	    c = rxvt_next_output_char ( r, &readpage );
+
+	    if( readpage == -1 )
+		mrxvt_set_escfail( r, page, 1 );
+	    else
+		rxvt_scr_charset_set(r, page, -2, (unsigned int) c);
+
+	    break;
+#endif
+
+#ifndef NO_FRILLS
+	case '6':
+	    rxvt_scr_backindex(r, page);
+	    break;
+#endif
+	case '7':
+	    rxvt_scr_cursor(r, page, SAVE);
+	    break;
+	case '8':
+	    rxvt_scr_cursor(r, page, RESTORE);
+	    break;
+#ifndef NO_FRILLS
+	case '9':
+	    rxvt_scr_forwardindex(r, page);
+	    break;
+#endif
+	case '=':
+	case '>':
+	    PrivMode((ch == '='), PrivMode_aplKP, page);
+	    break;
+
+	case C1_40:
+	    c = rxvt_next_output_char ( r, &readpage );
+
+	    if( readpage == -1 )
+		mrxvt_set_escfail( r, page, 1 );
+
+	    /* 2006-08-31 gi1242 XXX Why is there no code here? */
+
+	    break;
+
+	case C1_44:
+	    rxvt_scr_index(r, page, UP);
+	    break;
+
+	/* 8.3.87: NEXT LINE */
+	case C1_NEL:	    /* ESC E */
+	    rxvt_scr_add_lines(r, page, (const unsigned char *)"\n\r", 1, 2);
+	    break;
+
+	/* kidnapped escape sequence: Should be 8.3.48 */
+	case C1_ESA:	    /* ESC G */
+	    rxvt_process_graphics(r, page);
+	    break;
+
+	/* 8.3.63: CHARACTER TABULATION SET */
+	case C1_HTS:	    /* ESC H */
+	    rxvt_scr_set_tab(r, page, 1);
+	    break;
+
+	/* 8.3.105: REVERSE LINE FEED */
+	case C1_RI:	    /* ESC M */
+	    rxvt_scr_index(r, page, DN);
+	    break;
+
+	/* 8.3.142: SINGLE-SHIFT TWO */
+	/*case C1_SS2: scr_single_shift (2);   break; */
+
+	/* 8.3.143: SINGLE-SHIFT THREE */
+	/*case C1_SS3: scr_single_shift (3);   break; */
+
+	/* 8.3.27: DEVICE CONTROL STRING */
+	case C1_DCS:	    /* ESC P */
+	    /* rxvt_process_dcs_seq(r, page); */
+	    rxvt_process_xwsh_seq (r, page);
+	    break;
+
+	/* 8.3.110: SINGLE CHARACTER INTRODUCER */
+	case C1_SCI:	    /* ESC Z */
+	    rxvt_tt_write(r, page, (const unsigned char *)ESCZ_ANSWER,
+		  (unsigned int)(sizeof(ESCZ_ANSWER) - 1));
+	    break;	    /* steal obsolete ESC [ c */
+
+	/* 8.3.16: CONTROL SEQUENCE INTRODUCER */
+	case C1_CSI:	    /* ESC [ */
+	    rxvt_process_csi_seq(r, page);
+	    break;
+
+	/* 8.3.90: OPERATING SYSTEM COMMAND */
+	case C1_OSC:	    /* ESC ] */
+	    rxvt_process_osc_seq(r, page);
+	    break;
+
+	/* 8.3.106: RESET TO INITIAL STATE */
+	case 'c':
+	    rxvt_scr_poweron(r, page);
+#ifdef HAVE_SCROLLBARS
+	    rxvt_scrollbar_update(r, 1);
+#endif
+	    break;
+
+	/* 8.3.79: LOCKING-SHIFT TWO (see ISO2022) */
+	case 'n':
+	    rxvt_scr_charset_choose(r, page, 2);
+	    break;
+
+	/* 8.3.81: LOCKING-SHIFT THREE (see ISO2022) */
+	case 'o':
+	    rxvt_scr_charset_choose(r, page, 3);
+	    break;
+    }
+}
+/*}}} */
 
 /*{{{ process CONTROL SEQUENCE INTRODUCER (CSI) sequences `ESC[' */
 /* *INDENT-OFF* */
@@ -7089,6 +7830,157 @@ rxvt_process_getc( rxvt_t *r, int page, unsigned char ch )
     } /* for(;;) */
 }
 
+void
+rxvt_process_page_output (rxvt_t *r, int page, internal_char_t ch)
+{
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "mrxvt_process_page_output (r, %i).\n", page));
+    int		    limit;	/* Number of lines to read before asking for a
+				   refresh */
+
+    limit = r->h->skip_pages * r->TermWin.nrow;
+    if( limit < 0 )
+	/* Integer overflow */
+	limit = INT_MAX;
+    
+    /*
+     * Process as much input from the tab as is available. Keep a count of the
+     * (approximate) number of lines we have scrolled, so we know when to
+     * refresh.
+     */
+    for(;;)
+    {
+	if (ch >= ' ' || ch == '\t' || ch == '\n' || ch == '\r')
+	{
+	    /*
+	     * Read the longest text string we can from the input buffer.
+	     */
+
+	    int	    nlines = 0,		/* #lines read */
+		    nchars,		/* #chars read before newline */
+		    refreshnow = 0;	/* If we should request a refresh */
+	    internal_char_t   *str;
+
+	    nchars = PSCR(r, page).cur.col;
+
+	    /*
+	     * point `str' to the start of the string, decrement first since
+	     * it was post incremented in rxvt_cmd_getc()
+	     */
+	    str = --(PVTS(r, page)->charbuf_start);
+	    while (PVTS(r, page)->charbuf_start < PVTS(r, page)->charbuf_end)
+	    {
+		ch = *(PVTS(r, page)->charbuf_start)++;
+		
+		if (ch == '\n')
+		{
+		    nchars = 0;
+		    nlines++;
+		    PVTS(r, page)->scrolled_lines++;
+		}
+		else if (ch < ' ' && ch != '\t' && ch != '\r')
+		{
+		    /*
+		     * Unprintable. Reduce outbuf_start so that this character
+		     * will be processed later.
+		     */
+		    PVTS(r, page)->charbuf_start--;
+		    break;
+		}
+		else if (++nchars > r->TermWin.ncol )
+		{
+		    PVTS(r, page)->scrolled_lines++;
+		    nlines++;
+		    nchars = 0;
+		}
+
+		if (
+		     PVTS(r, page)->mapped			&&
+		     PVTS(r, page)->scrolled_lines >= limit
+		   )
+		{
+		    refreshnow = 1;
+		    break;
+		}
+	    }
+
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "\e[31mAdding %d chars %d lines in tab %d.\e[0m\n", PVTS(r, page)->charbuf_start - str, nlines, page, PVTS(r, page)->charbuf_start - str));
+
+	    /*
+	     * NOTE: nlines can not be MORE than the number of lines we will
+	     * actually add!
+	     */
+	    // TODO Jehan: modify rxvt_scr_add_lines for internal_char_t
+	    rxvt_scr_add_lines (r, page, str, nlines, (PVTS(r, page)->charbuf_start - str));
+
+	    /*
+	     * Only refresh the screen if we've scrolled more than
+	     * MAX_SKIPPED_PAGES pages.
+	     *
+	     * Refreshing should be correct for small scrolls, because
+	     * nbytes_last_read will be small, forcing the refresh.
+	     */
+	    if (refreshnow)
+	    {
+		refreshnow = 0;
+
+		/*
+		 * Note: If the tab is not visible, then rxvt_scr_refresh
+		 * returns immediately. Also rxvt_scr_refresh resets
+		 * scrolled_lines.
+		 */
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Requesting refresh." " Active tab (%d) scrolled %d lines\n", ATAB(r), AVTS(r)->scrolled_lines ));
+		rxvt_scr_refresh (r, page, (r->h->refresh_type & ~CLIPPED_REFRESH));
+
+		/* If we have X events to process, then do so now. */
+		if (XPending (r->Xdisplay))
+		    break;
+	    }
+	}
+	/*
+	 * Process escape sequence
+	 */
+	else if (ch == C0_ESC)
+	{
+	    /* Save the start of the escape sequence */
+	    if (IS_NULL (PVTS(r, page)->charbuf_escstart))
+		PVTS(r, page)->charbuf_escstart = PVTS(r, page)->charbuf_start - 1;
+
+	    /* Forget the previous escape sequence failure (if any) */
+	    SET_NULL (PVTS(r, page)->charbuf_escfail);
+
+	    /* Attempt to process the escape sequence */
+	    // TODO Jehan
+	    mrxvt_process_escape_seq (r, page);
+
+	    /* If we succeeded, then clear the start. */
+	    if (IS_NULL (PVTS(r, page)->charbuf_escfail))
+		SET_NULL( PVTS(r, page)->charbuf_escstart );
+	    else
+		/* Otherwise don't process any more data from this tab */
+		break;
+	}
+	/*
+	 * Anything else must be a non-printing character
+	 */
+	else
+	{
+	    rxvt_process_nonprinting (r, page, ch);
+	}
+
+	/*
+	 * Check if we can keep reading on this tab.
+	 *
+	 * NOTE: We could check if we also have pending X events, but this will
+	 * generate many many extra protocol requests, which can be quite a
+	 * problem on a slow connection. Thus for now we only process X events
+	 * on screen refreshes or in rxvt_cmd_getc().
+	 */
+	if (mrxvt_page_has_output (r, page))
+	    ch = *PVTS(r,page)->charbuf_start++;
+	else
+	    break;
+    } /* for(;;) */
+}
 
 /*{{{ Read and process output from the application */
 /* LIBPROTO */
