@@ -68,6 +68,7 @@ typedef struct
 } row_col_t;
 
 typedef unsigned char text_t;
+//typedef internal_char_t text_t;
 #if defined(TTY_256COLOR) || defined(MULTICHAR_SET)
 # define rend_t	    uint32_t
 #else

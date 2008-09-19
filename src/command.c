@@ -7910,7 +7910,7 @@ rxvt_process_page_output (rxvt_t *r, int page, internal_char_t ch)
 	     * actually add!
 	     */
 	    // TODO Jehan: modify rxvt_scr_add_lines for internal_char_t
-	    rxvt_scr_add_lines (r, page, str, nlines, (PVTS(r, page)->charbuf_start - str));
+	    mrxvt_scr_add_lines (r, page, str, nlines, (PVTS(r, page)->charbuf_start - str));
 
 	    /*
 	     * Only refresh the screen if we've scrolled more than
