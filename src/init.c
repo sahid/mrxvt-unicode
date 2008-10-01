@@ -2951,10 +2951,10 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
     PVTS(r, page)->outbuf_start	= PVTS(r, page)->outbuf_end
 	= PVTS(r, page)->outbuf_base;
 
-    PVTS(r, page)->charbuf_start = PVTS(r, page)->charbuf_end
-	= PVTS(r, page)->charbuf_base;
-    SET_NULL( PVTS(r, page)->charbuf_escstart);
-    SET_NULL( PVTS(r, page)->charbuf_escfail);
+    PVTS(r, page)->textbuf_start = PVTS(r, page)->textbuf_end
+	= PVTS(r, page)->textbuf_base;
+    SET_NULL( PVTS(r, page)->textbuf_escstart);
+    SET_NULL( PVTS(r, page)->textbuf_escfail);
 
     /* Conversion state created and set to initial state. */
 #ifdef HAVE_ICONV_H
@@ -3026,7 +3026,6 @@ rxvt_destroy_termwin( rxvt_t *r, int page )
     rxvt_free (PVTS(r, page)->shift_state);
 #endif
     rxvt_free (PVTS(r, page));
-
     rxvt_dbgmsg ((DBG_DEBUG, DBG_INIT, "\tThe terminal %d has been successfully freed.\n", page));
 }
 

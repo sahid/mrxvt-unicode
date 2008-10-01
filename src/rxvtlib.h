@@ -41,17 +41,6 @@
 /* type of unicode_t */
 typedef uint32_t	unicode_t;
 
-#ifdef HAVE_ICONV_H
-// With iconv, characters will be encoded in "UCS-4-INTERNAL", Full Unicode.
-typedef uint32_t internal_char_t; 
-#else
-/* Without iconv, characters will be converted to wchar_t, which is often
- * Unicode on most platform, though it is not required by the Unicode standard.
- * Hence if possible, using iconv is preferred.
- */
-typedef wchar_t internal_char_t;
-#endif
-
 
 /*****************************************************************************
  *                                 SECTION 2                                 *
@@ -67,8 +56,18 @@ typedef struct
     int32_t         col;
 } row_col_t;
 
-typedef unsigned char text_t;
-//typedef internal_char_t text_t;
+//typedef unsigned char text_t;
+#ifdef HAVE_ICONV_H
+// With iconv, characters will be encoded in "UCS-4-INTERNAL", Full Unicode.
+typedef uint32_t text_t;
+#else
+/* Without iconv, characters will be converted to wchar_t, which is often
+ * Unicode on most platform, though it is not required by the Unicode standard.
+ * Hence if possible, using iconv is preferred.
+ */
+typedef wchar_t text_t;
+#endif
+
 #if defined(TTY_256COLOR) || defined(MULTICHAR_SET)
 # define rend_t	    uint32_t
 #else
@@ -770,23 +769,23 @@ typedef struct
     unsigned char   *inbuf_base,		/* pointer to physical buffer */
 		    *inbuf_start,		/* beginning of area to write */
 		    *inbuf_end;		/* end of area to write */
-	 int inbuf_room; /* Remaining room at the end of the buffer */
+    int inbuf_room; /* Remaining room at the end of the buffer */
 
     /*
      * Data read from cmd_fd is buffered in here [Child's output buffer]
      */
-    unsigned char   *outbuf_escstart,	/* Start of an escape sequence */
-		    *outbuf_escfail,	/* Position where processing of an
-					   escape sequence last failed */
+    unsigned char   //*outbuf_escstart,	/* Start of an escape sequence */
+		    //*outbuf_escfail,	/* Position where processing of an
+		//			   escape sequence last failed */
 		    *outbuf_start,	/* current char */
 		    *outbuf_end;	/* End of read child's output */
     unsigned char   outbuf_base[BUFSIZ];
 
-    internal_char_t *charbuf_escstart,
-	    *charbuf_escfail,
-	    *charbuf_start,
-	    *charbuf_end;
-    internal_char_t charbuf_base[BUFSIZ];
+    text_t *textbuf_escstart,
+	    *textbuf_escfail,
+	    *textbuf_start,
+	    *textbuf_end;
+    text_t textbuf_base[BUFSIZ];
 
 #ifdef HAVE_ICONV_H
     iconv_t	    shift_state; // Shift state when using iconv.
