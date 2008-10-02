@@ -193,7 +193,7 @@ void           rxvt_process_x_event          (rxvt_t*, XEvent*);
 #ifdef PRINTPIPE
 void           rxvt_process_print_pipe       (rxvt_t*, int);
 #endif
-void           rxvt_process_nonprinting      (rxvt_t*, int, unsigned char);
+void           rxvt_process_nonprinting      (rxvt_t*, int, text_t);
 void           rxvt_process_escape_vt52      (rxvt_t*, int, unsigned char);
 void           rxvt_process_escape_seq       (rxvt_t*, int);
 void           rxvt_process_csi_seq          (rxvt_t*, int);
@@ -5034,7 +5034,7 @@ rxvt_set_escfail( rxvt_t *r, int page, int nchars )
 /*{{{ process non-printing single characters */
 /* INTPROTO */
 void
-rxvt_process_nonprinting(rxvt_t* r, int page, unsigned char ch)
+rxvt_process_nonprinting(rxvt_t* r, int page, text_t ch)
 {
     switch (ch)
     {
@@ -6986,6 +6986,7 @@ rxvt_process_graphics(rxvt_t* r, int page)
 void
 rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_process_getc (r, %d, 0x%X)\n", page, ch));
     int		    limit;	/* Number of lines to read before asking for a
 				   refresh */
 
@@ -7021,9 +7022,13 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	     * it was post incremented in rxvt_cmd_getc()
 	     */
 	    str = --(PVTS(r, page)->textbuf_start);
+
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tTested for display:\n"));
+
 	    while (PVTS(r, page)->textbuf_start < PVTS(r, page)->textbuf_end)
 	    {
 		ch = *(PVTS(r, page)->textbuf_start)++;
+	    	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t\t0x%X\n", ch));
 		
 		if (ch == '\n')
 		{
@@ -7058,7 +7063,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 		}
 	    }
 
-	    //rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "\e[31mAdding %d chars %d lines in tab %d\e[0m\n%.*s\n", PVTS(r, page)->outbuf_start - str, nlines, page, PVTS(r, page)->outbuf_start - str, str));
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND, "\t\e[31mAdding %d chars %d lines in tab %d\e[0m\n", PVTS(r, page)->textbuf_start - str, nlines, page));
 
 	    /*
 	     * NOTE: nlines can not be MORE than the number of lines we will
@@ -7098,6 +7103,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	 */
 	else if( ch == C0_ESC )
 	{
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tESC char: 0x%X\n", ch));
 	    /* Save the start of the escape sequence */
 	    if( IS_NULL( PVTS(r, page)->textbuf_escstart ) )
 		PVTS(r, page)->textbuf_escstart =
@@ -7122,6 +7128,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	 */
 	else
 	{
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tNon printing: 0x%X\n", ch));
 	    rxvt_process_nonprinting(r, page, ch);
 	}
 

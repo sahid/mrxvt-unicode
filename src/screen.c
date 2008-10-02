@@ -219,10 +219,13 @@ void rxvt_free_clipping		  (rxvt_t*, __attribute__((unused)) void*, GC, Region);
 void
 rxvt_blank_line(text_t *et, rend_t *er, unsigned int width, rend_t efs)
 {
-    MEMSET(et, ' ', (size_t)width);
+    //MEMSET(et, ' ', (size_t)width);
     efs &= ~RS_baseattrMask;
     for (; width--;)
+    {
+    	*et++ = ' ';
 	*er++ = efs;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1088,7 +1091,7 @@ rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
     text_t	 *stp;
     rend_t	 *srp;
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines( r, %d, %.*s, %d, %d)\n", page, min(len, 36), str, nlines, len ));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines (r, %d, %.*s, %d, %d)\n", page, min(len, 36), str, nlines, len));
 
     if (len <= 0)	/* sanity */
 	return;
@@ -1119,7 +1122,7 @@ rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
 
 	    CURROW -= nlines;
 
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\e[32mScrolling %d lines. CURROW=%d\e[0m\n", nlines, CURROW ));
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mScrolling %d lines. CURROW=%d\e[0m\n", nlines, CURROW ));
 	}
     }
 
@@ -1369,6 +1372,7 @@ rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
 void
 rxvt_scr_backspace(rxvt_t* r, int page)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_backspace (r, %d)\n", page));
     RESET_CHSTAT(r, page);
     PVTS(r, page)->want_refresh = 1;
     if (CURCOL == 0)
@@ -3048,12 +3052,18 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	 * Xft does not support XDrawImageString, so we need to clear the
 	 * background of text by ourselves.
 	 */
-	if (fillback)
+	//if (fillback)
 	{
 	    XGlyphInfo extents;
 	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (XftChar32*) str, len, &extents);
 	    XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
-		    x, y, extents.width, extents.height);
+		    x, y,
+		    extents.xOff, 
+		    Height2Pixel(1));
+		    //extents.yOff);
+
+		    // Width2Pixel(len * 2), Height2Pixel(1));
+		    //extents.width, Height2Pixel(1)); //extents.height);
 		    //Width2Pixel(len * (1 + adjust)), Height2Pixel(1));
 		    //Width2Pixel(len), Height2Pixel(1));
 	    // TODO: Nothing to free here?
