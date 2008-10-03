@@ -1078,12 +1078,13 @@ adjust_view_start( rxvt_t *r, int page, int nlines)
 }
 
 /*
- * Add text given in <str> of length <len> to screen struct
+ * Add text given in <str> of length <len> to screen struct of tab <page>.
+ * <nlines> is an inferior approximation of the number of lines which will be
+ * scrolled.
  */
 /* EXTPROTO */
 void
-rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
-	int len)
+rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 {
     unsigned char   checksel, clearsel;
     text_t c;
@@ -1166,6 +1167,12 @@ rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
     for (i = 0; i < len;)
     {
 	c = str[i++];
+
+	XftFont* font;
+	XGlyphInfo  extents;
+	char c_size;
+	int col;
+
 	switch (c)
 	{
 	    case '\t':
@@ -1338,9 +1345,19 @@ rxvt_scr_add_lines(rxvt_t* r, int page, text_t* str, int nlines,
 
 	stp[CURCOL] = c;
 	srp[CURCOL] = PVTS(r, page)->rstyle;
-	if (CURCOL < (last_col - 1))
-	    CURCOL++;
-	else
+
+	font = r->TermWin.xftmfont;
+	XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
+	
+	c_size = Pixel2Col (extents.xOff) + 1;
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
+
+	for (col = 1; col < c_size; col++)
+	    stp[CURCOL + col] = 0;
+
+	CURCOL += c_size;
+
+	if (CURCOL > last_col)
 	{
 	    PSCR(r, page).tlen[row] = last_col;
 	    if (PSCR(r, page).flags & Screen_Autowrap)
@@ -1373,6 +1390,8 @@ void
 rxvt_scr_backspace(rxvt_t* r, int page)
 {
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_backspace (r, %d)\n", page));
+
+    //text_t* stp;
     RESET_CHSTAT(r, page);
     PVTS(r, page)->want_refresh = 1;
     if (CURCOL == 0)
@@ -1380,13 +1399,23 @@ rxvt_scr_backspace(rxvt_t* r, int page)
 	if (CURROW > 0)
 	{
 #ifdef TERMCAP_HAS_BW
-	    CURCOL = r->TermWin.ncol - 1;
 	    CURROW--;
+	    //stp = PSCR(r, page).text[CURROW];
+	    CURCOL = r->TermWin.ncol - 1;
+	    //if (stp[CURCOL] == 0)
+	//	CURCOL--;
 	    return;
 #endif
 	}
-    } else if ((PSCR(r, page).flags & Screen_WrapNext) == 0)
+    }
+    else if ((PSCR(r, page).flags & Screen_WrapNext) == 0)
+    {
 	rxvt_scr_gotorc(r, page, 0, -1, RELATIVE);
+	/*stp = PSCR(r, page).text[CURROW];
+	if (stp[CURCOL] == 0)
+	    rxvt_scr_gotorc (r, page, 0, -1, RELATIVE);*/
+    }
+
     PSCR(r, page).flags &= ~Screen_WrapNext;
 }
 

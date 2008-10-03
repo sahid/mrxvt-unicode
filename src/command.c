@@ -7036,7 +7036,6 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 		    nlines++;
 		    PVTS(r, page)->scrolled_lines++;
 		}
-
 		else if (ch < ' ' && ch != '\t' && ch != '\r')
 		{
 		    /*
@@ -7046,17 +7045,13 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 		    PVTS(r, page)->textbuf_start--;
 		    break;
 		}
-
 		else if( ++nchars > r->TermWin.ncol )
 		{
 		    PVTS(r, page)->scrolled_lines++;
 		    nchars = 0;
 		}
 
-		if(
-		     PVTS(r, page)->mapped			&&
-		     PVTS(r, page)->scrolled_lines >= limit
-		  )
+		if (PVTS(r, page)->mapped && PVTS(r, page)->scrolled_lines >= limit)
 		{
 		    refreshnow = 1;
 		    break;
@@ -7088,9 +7083,9 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 		 * returns immediately. Also rxvt_scr_refresh resets
 		 * scrolled_lines.
 		 */
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Requesting refresh." " Active tab (%d) scrolled %d lines\n", ATAB(r), AVTS(r)->scrolled_lines ));
-		rxvt_scr_refresh(r, page,
-			(r->h->refresh_type & ~CLIPPED_REFRESH) );
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "Requesting refresh."
+			    " Active tab (%d) scrolled %d lines\n", ATAB(r), AVTS(r)->scrolled_lines ));
+		rxvt_scr_refresh (r, page, (r->h->refresh_type & ~CLIPPED_REFRESH));
 
 		/* If we have X events to process, then do so now. */
 		if( XPending( r->Xdisplay ) )
@@ -7128,7 +7123,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	 */
 	else
 	{
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tNon printing: 0x%X\n", ch));
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tNon printing: 0x%X\n", ch));
 	    rxvt_process_nonprinting(r, page, ch);
 	}
 
