@@ -1168,10 +1168,10 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     {
 	c = str[i++];
 
-	XftFont* font;
-	XGlyphInfo  extents;
-	char c_size;
-	int col;
+	//XftFont* font;
+	//XGlyphInfo  extents;
+	//char c_size;
+	//int col;
 
 	switch (c)
 	{
@@ -1346,16 +1346,17 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL] = PVTS(r, page)->rstyle;
 
-	font = r->TermWin.xftmfont;
-	XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
+	//font = r->TermWin.xftmfont;
+	//XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
 	
-	c_size = Pixel2Col (extents.xOff) + 1;
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
+	//c_size = Pixel2Col (extents.xOff) + 1;
+	//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
 
-	for (col = 1; col < c_size; col++)
-	    stp[CURCOL + col] = 0;
+	//for (col = 1; col < c_size; col++)
+	  //  stp[CURCOL + col] = 0;
 
-	CURCOL += c_size;
+	//CURCOL += c_size;
+	CURCOL++;
 
 	if (CURCOL > last_col)
 	{
@@ -2268,7 +2269,7 @@ rxvt_scr_expose(rxvt_t* r, int page,
     rc[PART_BEG].col = Pixel2Col(x);
     rc[PART_BEG].row = Pixel2Row(y);
     /* round up */
-    rc[PART_END].col = Pixel2Width(x + width + r->TermWin.fwidth - 1);
+    rc[PART_END].col = r->TermWin.ncol - 1; //Pixel2Width(x + width + r->TermWin.fwidth - 1);
     rc[PART_END].row = Pixel2Row(y + height + r->TermWin.fheight - 1);
 
     /* sanity checks */
@@ -2281,13 +2282,15 @@ rxvt_scr_expose(rxvt_t* r, int page,
     rxvt_dbgmsg ((DBG_VERBOSE, DBG_SCREEN, "rxvt_scr_expose %d (x:%d, y:%d, w:%d, h:%d) area (c:%d,r:%d)-(c:%d,r:%d)\n", page, x, y, width, height, rc[PART_BEG].col, rc[PART_BEG].row, rc[PART_END].col, rc[PART_END].row));
 
 	{
-		register int	j = rc[PART_BEG].col;
-		register int	k = rc[PART_END].col - rc[PART_BEG].col + 1;
+		register int	j; // = rc[PART_BEG].col;
+		//register int	k = rc[PART_END].col - rc[PART_BEG].col + 1;
 
 		for (i = rc[PART_BEG].row; i <= rc[PART_END].row; i++)
 		{
-			rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, " memset drawn_text[%d][%d], len=%d\n", i, j, k));
-			MEMSET(&(PVTS(r, page)->drawn_text[i][j]), 0, k);
+			//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, " memset drawn_text[%d][%d], len=%d\n", i, j, k));
+			//MEMSET(&(PVTS(r, page)->drawn_text[i][j]), 0, k);
+			for (j = rc[PART_BEG].col; j < rc[PART_END].col + 1; j++)
+				PVTS(r, page)->drawn_text[i][j] = 0;
 		}
 	 }
 
@@ -3841,6 +3844,8 @@ rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
 
 	    /* screen rendition (target rendtion) */
 	    rend = srp[col];
+	    XftFont* font;
+	    XGlyphInfo extents;
 
 	    /*
 	     * compare new text with old - if exactly the same then continue
@@ -3880,7 +3885,11 @@ rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
 	    len = 0;
 	    buffer[len++] = dtp[col] = stp[col];
 	    drp[col] = rend;
-	    xpixel = Col2Pixel(col);
+
+	    font = r->TermWin.xftmfont;
+	    XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
+	    //xpixel = Col2Pixel(col);
+	    xpixel = extents.xOff;
 
 	    /*
 	     * Find out the longest string we can write out at once
