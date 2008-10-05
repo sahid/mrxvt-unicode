@@ -872,9 +872,7 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
 #ifdef DEBUG
     static int	    debug_key = 1;  /* accessible by a debugger only */
 #endif	/* DEBUG */
-#ifdef USE_XIM
     int		    valid_keysym = 0;
-#endif	/* USE_XIM */
     /*
     ** kbuf should be static in order to avoid performance penalty
     ** on allocation in the stack. And we only define it inside this
@@ -882,7 +880,6 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
     ** else.
     */
     static unsigned char kbuf[KBUFSZ];	/* was r->h->kbuf */
-
 
     rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "KeyPress event\n"));
     shft = (ev->state & ShiftMask);
@@ -909,7 +906,6 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
      */
     r->numlock_state = ( ev->state & r->h->ModNumLockMask );
 
-#ifdef USE_XIM
     if (NOT_NULL(r->h->Input_Context))
     {
 	Status	      status_return;
@@ -923,7 +919,6 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
     else
     {
 	valid_keysym = 1;
-#endif	/* USE_XIM */
 
 	/*
 	******************************************************
@@ -951,9 +946,7 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
 	******************************************************
 	*/
 
-#ifdef USE_XIM
     }
-#endif	/* USE_XIM */
 
 
 #ifdef USE_DEADKEY
@@ -1077,9 +1070,7 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
     /*
      * V: beginning of valid_keysym (1)
      */
-#ifdef USE_XIM
     if (valid_keysym)
-#endif	/* USE_XIM */
     {
 	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "ctrl-meta-shft-keysym: %d-%d-%d-%x\n", ctrl, meta, shft, (int) keysym));
 
@@ -6984,7 +6975,7 @@ rxvt_process_graphics(rxvt_t* r, int page)
  */
 /* INTPROTO */
 void
-rxvt_process_getc( rxvt_t *r, int page, text_t ch )
+rxvt_process_getc (rxvt_t *r, int page, text_t ch)
 {
     rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_process_getc (r, %d, 0x%X)\n", page, ch));
     int		    limit;	/* Number of lines to read before asking for a
@@ -6995,7 +6986,6 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	/* Integer overflow */
 	limit = INT_MAX;
     
-
     /*
      * Process as much input from the tab as is available. Keep a count of the
      * (approximate) number of lines we have scrolled, so we know when to
@@ -7023,15 +7013,15 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	     */
 	    str = --(PVTS(r, page)->textbuf_start);
 
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tTested for display:\n"));
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tFor display:\n"));
 
 	    while (PVTS(r, page)->textbuf_start < PVTS(r, page)->textbuf_end)
 	    {
 		ch = *(PVTS(r, page)->textbuf_start)++;
-	    	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t\t0x%X\n", ch));
 		
 		if (ch == '\n')
 		{
+		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t\t* New Line.\n"));
 		    nchars = 0;
 		    nlines++;
 		    PVTS(r, page)->scrolled_lines++;
@@ -7047,6 +7037,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 		}
 		else if( ++nchars > r->TermWin.ncol )
 		{
+		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t\t* 0x%X\n", ch));
 		    PVTS(r, page)->scrolled_lines++;
 		    nchars = 0;
 		}
@@ -7101,8 +7092,7 @@ rxvt_process_getc( rxvt_t *r, int page, text_t ch )
 	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tESC char: 0x%X\n", ch));
 	    /* Save the start of the escape sequence */
 	    if( IS_NULL( PVTS(r, page)->textbuf_escstart ) )
-		PVTS(r, page)->textbuf_escstart =
-		    PVTS(r, page)->textbuf_start-1;
+		PVTS(r, page)->textbuf_escstart = PVTS(r, page)->textbuf_start - 1;
 
 	    /* Forget the previous escape sequence failure (if any) */
 	    SET_NULL( PVTS(r, page)->textbuf_escfail );

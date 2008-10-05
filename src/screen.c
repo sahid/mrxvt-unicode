@@ -1411,7 +1411,8 @@ rxvt_scr_backspace(rxvt_t* r, int page)
     }
     else if ((PSCR(r, page).flags & Screen_WrapNext) == 0)
     {
-	rxvt_scr_gotorc(r, page, 0, -1, RELATIVE);
+	//rxvt_scr_gotorc(r, page, 0, -1, RELATIVE);
+	CURCOL--;
 	/*stp = PSCR(r, page).text[CURROW];
 	if (stp[CURCOL] == 0)
 	    rxvt_scr_gotorc (r, page, 0, -1, RELATIVE);*/
@@ -1835,9 +1836,12 @@ rxvt_scr_E(rxvt_t* r, int page)
     {
 	/* make the `E's selectable */
 	PSCR(r, page).tlen[k] = r->TermWin.ncol;
-	MEMSET(PSCR(r, page).text[k], 'E', r->TermWin.ncol);
+	//MEMSET(PSCR(r, page).text[k], 'E', r->TermWin.ncol);
 	for (r1 = PSCR(r, page).rend[k], j = r->TermWin.ncol; j--; )
+	{
+	    PSCR(r, page).text[k][j] = 'E';
 	    *r1++ = fs;
+	}
     }
 }
 
@@ -3323,7 +3327,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
  */
 /* EXTPROTO */
 void
-rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
+rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 {
     unsigned char
 		clearfirst, /* first character writes before cell */
@@ -3365,7 +3369,7 @@ rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
     rend_t*	srp;	    /* screen-rend-pointer */
     text_t*	dtp;	    /* drawn-text pointer */
     text_t*	stp;	    /* screen-text-pointer */
-    text_t*	buffer;	    /* local copy of r->h->buffer */ // Jehan
+    text_t*	buffer;	    /* local copy of r->h->buffer */
     /*
     int		(*drawfunc) () = XDrawString;
     int		(*image_drawfunc) () = XDrawImageString;
@@ -4511,6 +4515,8 @@ rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
 	}
 	else if (h->oldcursor.row >= 0)
 	{
+	    XGlyphInfo extents;
+	    XGlyphInfo extents2;
 #ifndef NO_CURSORCOLOR
 	    unsigned long   gcmask; /* Graphics Context mask */
 
@@ -4524,10 +4530,16 @@ rxvt_scr_refresh(rxvt_t* r, int page, unsigned char refresh_type)
 	    }
 #endif
 
+	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col + morecur, &extents);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col, &extents);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp + h->oldcursor.col, 1, &extents2);
+
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
-		Col2Pixel(h->oldcursor.col + morecur),
+		//Col2Pixel(h->oldcursor.col + morecur),
+		extents.xOff,
 		Row2Pixel(h->oldcursor.row),
-		(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
+		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
+		extents2.xOff,
 		(unsigned int)(Height2Pixel(1)
 		/* - r->TermWin.lineSpace*/ - 1));
 
