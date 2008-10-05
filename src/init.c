@@ -660,8 +660,10 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(r->TermWin.fontset);
 //#endif
     SET_NULL(r->TermWin.font);
+#if 0
 #ifdef MULTICHAR_SET
     SET_NULL(r->TermWin.mfont);
+#endif
 #endif
 #ifndef NO_BOLDFONT
     SET_NULL(r->TermWin.bfont);
@@ -675,13 +677,13 @@ rxvt_init_vars(rxvt_t *r)
 # ifndef NO_BOLDFONT
     SET_NULL(r->TermWin.xftbfont);
 # endif	/* NO_BOLDFONT */
-# ifdef MULTICHAR_SET
+//# ifdef MULTICHAR_SET
 #  ifdef HAVE_ICONV_H
     r->TermWin.xfticonv = (iconv_t) -1;
 #  endif
-    SET_NULL(r->TermWin.xftmpattern);
-    SET_NULL(r->TermWin.xftmfont);
-# endif	/* MULTICHAR_SET */
+//  SET_NULL(r->TermWin.xftmpattern);
+//    SET_NULL(r->TermWin.xftmfont);
+//# endif	/* MULTICHAR_SET */
 #endif	/* XFT_SUPPORT */
 
     UNSET_ATOM(h->xa[XA_COMPOUND_TEXT]);
@@ -1322,6 +1324,7 @@ rxvt_init_resources(rxvt_t* r, int argc, const char *const *argv)
     else /* default xft Pfont size */
 	r->TermWin.xftpsize = DEFAULT_XFT_PFONT_SIZE;
 
+#if 0
 # ifdef MULTICHAR_SET
     if (rs[Rs_xftmsz])
     {
@@ -1332,6 +1335,7 @@ rxvt_init_resources(rxvt_t* r, int argc, const char *const *argv)
     else /* default xft font size */
 	r->TermWin.xftmsize = DEFAULT_XFT_FONT_SIZE;
 # endif	/* MULTICHAR_SET */
+#endif
 
     /* Set default Freetype fonts */
     rxvt_set_default_font_xft (r);

@@ -2886,11 +2886,13 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 	font = ( pfont == USE_BOLD_PFONT) ?
 	    r->TermWin.xftPfont : r->TermWin.xftpfont;
     }
+#if 0
 #ifdef MULTICHAR_SET
     else
 	font = r->TermWin.xftmfont;
 #endif
- //   else font = r->TermWin.xftfont;
+#endif
+    else font = r->TermWin.xftfont;
 
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Draw: 0x%8x %p: '%.40s'\n", rend, font, str ));
 
@@ -3091,7 +3093,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	//if (fillback)
 	{
 	    XGlyphInfo extents;
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (XftChar32*) str, len, &extents);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (XftChar32*) str, len, &extents);
 	    XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
 		    x, y,
 		    extents.xOff, 
@@ -3357,11 +3359,13 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		row_offset; /* basic offset in screen structure */
 #ifndef NO_CURSORCOLOR
     rend_t	cc1 = 0;    /* store colours at cursor position(s) */
+#if 0
 # ifdef MULTICHAR_SET
     rend_t	cc2 = 0;    /* store colours at cursor position(s) */
 			    /* 2007-07-30 gi1242: NULL assignment to suppress
 			     * compile warning. */
 # endif
+#endif
 #endif
     XGCValues	gcvalue;    /* Graphics Context values */
     XFontStruct*    wf;	    /* font structure */
@@ -3551,6 +3555,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    *srp = SET_BGCOLOR(*srp, ccol2);
 #endif /* NO_CURSORCOLOR */
 
+#if 0
 #ifdef MULTICHAR_SET
 	    if (IS_MULTI1(*srp))
 	    {
@@ -3572,6 +3577,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 # endif
 	    }
 #endif
+#endif
 	}
 
 	/* make sure no outline cursor is left around */
@@ -3587,6 +3593,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		{
 		    PVTS(r, page)->drawn_rend[ocrow][h->oldcursor.col] ^=
 			(RS_RVid | RS_Uline);
+#if 0
 #ifdef MULTICHAR_SET
 		    if (h->oldcursormulti)
 		    {
@@ -3595,6 +3602,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			    PVTS(r, page)->drawn_rend[ocrow][col] ^=
 				(RS_RVid | RS_Uline);
 		    }
+#endif
 #endif
 		}
 		if (r->TermWin.focus || !showcursor)
@@ -3614,8 +3622,10 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		h->oldcursor.row = CURROW + VSTART;
 		h->oldcursor.col = CURCOL;
+#if 0
 #ifdef MULTICHAR_SET
 		h->oldcursormulti = morecur;
+#endif
 #endif
 	    }
 	}
@@ -3870,6 +3880,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		if (!IS_MULTI1(rend))
 		    continue;
+#if 0
 #ifdef MULTICHAR_SET
 		else
 		{
@@ -3882,6 +3893,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		    }
 		}
 #endif
+#endif
 	    }
 	    /* redraw one or more characters */
 
@@ -3890,7 +3902,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    buffer[len++] = dtp[col] = stp[col];
 	    drp[col] = rend;
 
-	    font = r->TermWin.xftmfont;
+	    font = r->TermWin.xftfont;
 	    XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
 	    //xpixel = Col2Pixel(col);
 	    xpixel = extents.xOff;
@@ -3905,6 +3917,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 		fprop = (r->TermWin.propfont & PROPFONT_NORMAL);
 
+#if 0
 #ifdef MULTICHAR_SET
 	    if (
 		  IS_MULTI1(rend) && col < r->TermWin.ncol - 1
@@ -4004,6 +4017,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #else
 	    { /* add } for correct % bouncing */
 #endif
+#endif
+	    {
 		if (!fprop)
 		{
 		    int echars;
@@ -4501,6 +4516,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #ifndef NO_CURSORCOLOR
 	    *srp = (*srp & ~(RS_fgMask | RS_bgMask)) | cc1;
 #endif
+#if 0
 #ifdef MULTICHAR_SET
 	    if (morecur)
 	    {
@@ -4511,6 +4527,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		*srp = (*srp & ~(RS_fgMask | RS_bgMask)) | cc2;
 # endif
 	    }
+#endif
 #endif
 	}
 	else if (h->oldcursor.row >= 0)
@@ -4531,8 +4548,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 
 	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col + morecur, &extents);
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col, &extents);
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp + h->oldcursor.col, 1, &extents2);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp, h->oldcursor.col, &extents);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp + h->oldcursor.col, 1, &extents2);
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
 		//Col2Pixel(h->oldcursor.col + morecur),

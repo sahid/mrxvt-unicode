@@ -72,7 +72,7 @@ void rxvt_init_font_fixed      (rxvt_t*);
 void rxvt_init_bfont_xft       (rxvt_t*, XftPattern*);
 # endif
 # ifdef MULTICHAR_SET
-int  rxvt_init_mfont_xft       (rxvt_t*, XftPattern*, const char*);
+//int  rxvt_init_mfont_xft       (rxvt_t*, XftPattern*, const char*);
 int  isDoubleWidthFont         (Display *dpy, XftFont *font);
 # endif
 #endif	/* XFT_SUPPORT */
@@ -150,94 +150,94 @@ rxvt_pre_show_init( rxvt_t *r )
 rxvt_t *
 rxvt_init (int argc, const char *const *argv)
 {
-	register int    i;
-	register int    itnum; /* initial terminal number */
-	rxvt_t*	    r;
+    register int    i;
+    register int    itnum; /* initial terminal number */
+    rxvt_t*	    r;
 
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN, "rxvt_init (%d, %s)\n", argc, argv));
-	/* Allocate memory for "r" and initialize contents to 0 */
-	r = (rxvt_t *) rxvt_calloc(1, sizeof(rxvt_t));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN, "rxvt_init (%d, %s)\n", argc, argv));
+    /* Allocate memory for "r" and initialize contents to 0 */
+    r = (rxvt_t *) rxvt_calloc(1, sizeof(rxvt_t));
 
-	/* Save "r" in _rxvt_vars. This is the only assignment to _rxvt_vars */
-	rxvt_set_r(r);
+    /* Save "r" in _rxvt_vars. This is the only assignment to _rxvt_vars */
+    rxvt_set_r(r);
 
-	/* Initialize vars in "r" */
-	if (rxvt_init_vars(r) < 0)
-	{
-		rxvt_msg (DBG_ERROR, DBG_MAIN,  "Could not initialize." );
-		rxvt_free(r);
-		return NULL;
-	}
+    /* Initialize vars in "r" */
+    if (rxvt_init_vars(r) < 0)
+    {
+	rxvt_msg (DBG_ERROR, DBG_MAIN,  "Could not initialize." );
+	rxvt_free(r);
+	return NULL;
+    }
 
-	/* save global argc and argv */
-	r->global_argc = argc;
-	r->global_argv = (char**) argv;
+    /* save global argc and argv */
+    r->global_argc = argc;
+    r->global_argv = (char**) argv;
 
-	rxvt_init_secondary(r);
-	cmd_argv = rxvt_init_resources(r, argc, argv);
+    rxvt_init_secondary(r);
+    cmd_argv = rxvt_init_resources(r, argc, argv);
 
-	rxvt_pre_show_init( r );
+    rxvt_pre_show_init( r );
 
-	rxvt_create_show_windows(r, argc, argv);
+    rxvt_create_show_windows(r, argc, argv);
 
 #ifdef TRANSPARENT
-	if (ISSET_OPTION(r, Opt_transparent))
-	{
-		XSelectInput(r->Xdisplay, XROOT, PropertyChangeMask);
-		/*
-		 * Our "parents" will automatically be checked on the first expose and
-		 * ConfigureNotify event respectively. Forcefully calling it is just a
-		 * waste of time.
-		 */
+    if (ISSET_OPTION(r, Opt_transparent))
+    {
+	XSelectInput(r->Xdisplay, XROOT, PropertyChangeMask);
+	/*
+	 * Our "parents" will automatically be checked on the first expose and
+	 * ConfigureNotify event respectively. Forcefully calling it is just a
+	 * waste of time.
+	 */
 # if 0
-		rxvt_check_our_parents(r);
+	rxvt_check_our_parents(r);
 # endif
-	}
+    }
 #endif
 
-	rxvt_init_env(r);
-	rxvt_init_command(r);
-	rxvt_init_screen (r);
+    rxvt_init_env(r);
+    rxvt_init_command(r);
+    rxvt_init_screen (r);
 
-	/*
-	 * Initialize the pages.
-	 */
-	if (r->h->rs[Rs_initProfiles])
+    /*
+     * Initialize the pages.
+     */
+    if (r->h->rs[Rs_initProfiles])
+    {
+	char *s = (char *) r->h->rs[Rs_initProfiles];
+
+	do
 	{
-		char *s = (char *) r->h->rs[Rs_initProfiles];
-	
-		do
-		{
-			int profile = atoi( s );
-			rxvt_append_page (r, profile, NULL, NULL);
-			s = STRCHR( s, ',' );
-		}
-		while (NULL != s++);
+	    int profile = atoi( s );
+	    rxvt_append_page (r, profile, NULL, NULL);
+	    s = STRCHR( s, ',' );
 	}
-	/* Backward compatibility: Open profiles 0 .. n-1 if tnum=n. */
-	else if( r->h->rs[Rs_init_term_num] )
-	{
-		rxvt_msg (DBG_ERROR, DBG_MAIN,  "Option tnum is obsolete."
-				" Use --initProfileList instead" );
+	while (NULL != s++);
+    }
+    /* Backward compatibility: Open profiles 0 .. n-1 if tnum=n. */
+    else if( r->h->rs[Rs_init_term_num] )
+    {
+	rxvt_msg (DBG_ERROR, DBG_MAIN,  "Option tnum is obsolete."
+		" Use --initProfileList instead" );
 
-		itnum = atoi( r->h->rs[Rs_init_term_num] );
-		itnum = max( 1, itnum );
-		//itnum = min( itnum, MAX_PAGES );
+	itnum = atoi( r->h->rs[Rs_init_term_num] );
+	itnum = max( 1, itnum );
+	//itnum = min( itnum, MAX_PAGES );
 
-		for (i = 0; i < itnum; i ++)
-			rxvt_append_page( r, (i < MAX_PROFILES) ? i : 0 , NULL, NULL );
-	}
-	/* Just open the default tab */
-	else
-		rxvt_append_page( r, 0, NULL, NULL );
+	for (i = 0; i < itnum; i ++)
+	    rxvt_append_page( r, (i < MAX_PROFILES) ? i : 0 , NULL, NULL );
+    }
+    /* Just open the default tab */
+    else
+	rxvt_append_page( r, 0, NULL, NULL );
 
-	/* Activate the tab */
-	rxvt_activate_page (r, 0);
+    /* Activate the tab */
+    rxvt_activate_page (r, 0);
 
-	/* Initialize xlocale after VT is created */
-	rxvt_init_xlocale(r);
+    /* Initialize xlocale after VT is created */
+    rxvt_init_xlocale(r);
 
-	return r;
+    return r;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -888,6 +888,7 @@ rxvt_init_bfont_xft (rxvt_t* r, XftPattern* xpold)
 # endif	/* NO_BOLDFONT */
 
 
+#if 0
 # ifdef MULTICHAR_SET
 /* INTPROTO */
 int
@@ -1057,6 +1058,7 @@ Failure:
     return 0;
 }
 # endif	/* MULTICHAR_SET */
+#endif
 
 
 /*
@@ -1337,7 +1339,10 @@ rxvt_init_font_xft (rxvt_t* r)
     if (IS_NULL(r->TermWin.xftfont))
 	goto Failure;
 
-    r->TermWin.fwidth = r->TermWin.xftfont->max_advance_width;
+    //r->TermWin.fwidth = r->TermWin.xftfont->max_advance_width / 2;
+    XftTextExtents8 (r->Xdisplay, r->TermWin.xftfont, (unsigned char*) "@",
+		1, &ext1);
+    r->TermWin.fwidth = ext1.xOff;
     r->TermWin.fheight = r->TermWin.xftfont->ascent +
 				r->TermWin.xftfont->descent;
 # ifndef NO_LINESPACE
@@ -1416,10 +1421,12 @@ rxvt_init_font_xft (rxvt_t* r)
     rxvt_init_bfont_xft( r, xp );
 # endif
 
+#if 0
 # ifdef MULTICHAR_SET
     if (!rxvt_init_mfont_xft (r, xp, (char*) ofname))
 	goto Failure;
 # endif	/* MULTICHAR_SET */
+#endif
 
     XftPatternDestroy (xp);
 

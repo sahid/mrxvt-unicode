@@ -7137,14 +7137,13 @@ rxvt_process_getc (rxvt_t *r, int page, text_t ch)
 /*{{{ Read and process output from the application */
 /* LIBPROTO */
 void
-rxvt_main_loop(rxvt_t *r)
+rxvt_main_loop (rxvt_t *r)
 {
     register int	i;
     text_t		ch;
     int			page;
 
-
-    rxvt_dbgmsg ((DBG_VERBOSE, DBG_COMMAND,  "Entering rxvt_main_loop()\n" ));
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_COMMAND,  "rxvt_main_loop (r)\n" ));
 
     /* Send the screen size. */
     for (i = 0; i <= LTAB(r); i ++)
