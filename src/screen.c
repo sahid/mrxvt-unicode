@@ -1168,9 +1168,9 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     {
 	c = str[i++];
 
-	//XftFont* font;
-	//XGlyphInfo  extents;
-	//char c_size;
+	XftFont* font;
+	XGlyphInfo  extents;
+	char c_size;
 	//int col;
 
 	switch (c)
@@ -1346,19 +1346,26 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL] = PVTS(r, page)->rstyle;
 
-	//font = r->TermWin.xftmfont;
-	//XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
+	font = r->TermWin.xftfont;
+	XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
 	
-	//c_size = Pixel2Col (extents.xOff) + 1;
+	c_size = Pixel2Col (extents.xOff) + 1;
 	//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
 
+	CURCOL++;
 	//for (col = 1; col < c_size; col++)
-	  //  stp[CURCOL + col] = 0;
+	/*for (; c_size--;)
+	    //stp[CURCOL + col] = 0;
+	    stp[CURCOL++] = 0;*/
 
 	//CURCOL += c_size;
-	CURCOL++;
+	//CURCOL++;
+	//MIN_IT(CURCOL, last_col - 1);
+	PSCR(r, page).tlen[row] += c_size;
+	
 
-	if (CURCOL > last_col)
+	//if (CURCOL > last_col)
+	if (PSCR(r, page).tlen[row] >= last_col)
 	{
 	    PSCR(r, page).tlen[row] = last_col;
 	    if (PSCR(r, page).flags & Screen_Autowrap)
@@ -3855,11 +3862,13 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			    fprop;
 			    /* rendition value */
 	    rend_t	    rend;
-
-	    /* screen rendition (target rendtion) */
-	    rend = srp[col];
 	    XftFont* font;
 	    XGlyphInfo extents;
+
+	    if (stp[col] == 0)
+		continue;
+	    /* screen rendition (target rendtion) */
+	    rend = srp[col];
 
 	    /*
 	     * compare new text with old - if exactly the same then continue
@@ -3899,13 +3908,16 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 
 	    fontdiff = 0;
 	    len = 0;
-	    buffer[len++] = dtp[col] = stp[col];
-	    drp[col] = rend;
+	    //if (stp[col] != 0)
+	    //{
+		buffer[len++] = dtp[col] = stp[col];
+		drp[col] = rend;
 
-	    font = r->TermWin.xftfont;
-	    XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
-	    //xpixel = Col2Pixel(col);
-	    xpixel = extents.xOff;
+		font = r->TermWin.xftfont;
+		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
+		//xpixel = Col2Pixel(col);
+		xpixel = extents.xOff;
+	    //}
 
 	    /*
 	     * Find out the longest string we can write out at once
@@ -4382,10 +4394,10 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		CLEAR_CHARS( r, page, already_cleared,
 			xpixel, ypixelc, len);
-		for (i = 0; i < len; i++)
+		//for (i = 0; i < len; i++)
 		    /* don't draw empty strings */
-		    if (buffer[i] != ' ')
-		    {
+		  //  if (buffer[i] != ' ')
+		    //{
 			rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "CL Drawing '%.60s' (%d)\n", buffer, len));
 
 			rxvt_scr_draw_string (r, page, xpixel, ypixelc,
@@ -4394,7 +4406,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 				((refresh_type & CLIPPED_REFRESH) ?
 					r->h->refreshRegion : None ));
 			break;
-		    }
+		    //}
 	    }
 	    else if (fprop || fontdiff)
 	    {
