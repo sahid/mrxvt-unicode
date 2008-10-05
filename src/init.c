@@ -607,9 +607,9 @@ const char *const xa_names[NUM_XA] = {
 #ifdef HAVE_X11_SM_SMLIB_H
     "SM_CLIENT_ID",
 #endif
-#ifdef USE_XIM
+//#ifdef USE_XIM
     "WM_LOCALE_NAME",
-#endif
+//#endif
 #ifdef TRANSPARENT
     "_XROOTPMAP_ID",
     "_XSETROOT_ID",
@@ -656,9 +656,9 @@ rxvt_init_vars(rxvt_t *r)
 	 SET_NULL (r->vts);
 
     SET_NULL(r->Xdisplay);
-#ifdef USE_XIM
+//#ifdef USE_XIM
     SET_NULL(r->TermWin.fontset);
-#endif
+//#endif
     SET_NULL(r->TermWin.font);
 #ifdef MULTICHAR_SET
     SET_NULL(r->TermWin.mfont);
@@ -707,9 +707,9 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(h->MenuBar.title);
 # endif
 
-# ifdef USE_XIM
+//# ifdef USE_XIM
     SET_NULL(h->Input_Context);
-# endif
+//# endif
     /* SET_NULL(h->inbuf_start); */
     SET_NULL(h->buffer);
 
@@ -1595,7 +1595,7 @@ rxvt_init_env(rxvt_t *r)
 void
 rxvt_init_xlocale(rxvt_t *r)
 {
-#ifdef USE_XIM
+//#ifdef USE_XIM
     if (IS_NULL(r->h->locale))
 	rxvt_msg (DBG_ERROR, DBG_INIT, "Setting locale failed.");
     else
@@ -1619,7 +1619,7 @@ rxvt_init_xlocale(rxvt_t *r)
 	    XRegisterIMInstantiateCallback(r->Xdisplay, NULL, NULL,
 		NULL, rxvt_IM_init_callback, NULL);
     }
-#endif
+//#endif
 }
 
 /*----------------------------------------------------------------------*/

@@ -1194,10 +1194,10 @@ enum {
 #ifdef PRINTPIPE
     Rs_print_pipe,
 #endif
-#ifdef USE_XIM
+//#ifdef USE_XIM
     Rs_preeditType,
     Rs_inputMethod,
-#endif
+//#endif
     Rs_opacity,		/* transluscent window opacity degree */
     Rs_opacityDegree,	/* opacity change degree */
 #ifndef NO_FRILLS
@@ -1274,9 +1274,9 @@ enum {
 #ifdef HAVE_X11_SM_SMLIB_H
     XA_SM_CLIENT_ID,
 #endif
-#ifdef USE_XIM
+//#ifdef USE_XIM
     XA_WM_LOCALE_NAME,
-#endif
+//#endif
 #ifdef TRANSPARENT
     XA_XROOTPMAPID,
     XA_XSETROOTID,
@@ -1623,11 +1623,11 @@ struct rxvt_hidden {
 #ifndef NO_DELETE_KEY
     const char*	    key_delete;
 #endif
-#ifdef USE_XIM
+//#ifdef USE_XIM
     XIC		    Input_Context;
     XIMStyle	    input_style;
     int		    event_type;
-#endif
+//#endif
     struct mouse_event	MEvent;
     row_col_t	    oldcursor;
 #ifdef MULTICHAR_SET

@@ -2527,9 +2527,9 @@ rxvt_refresh_vtscr_if_needed( rxvt_t *r )
 	rxvt_scrollbar_update(r, 1);
 #endif
 
-#ifdef USE_XIM
+//#ifdef USE_XIM
 	rxvt_IM_send_spot (r);
-#endif	/* USE_XIM */
+//#endif	/* USE_XIM */
 
     }   /* if (AVTS(r)->want_refresh) */
 }
@@ -2636,7 +2636,7 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
 		}
 #endif	/* POINTER_BLANK */
 
-#ifdef USE_XIM
+//#ifdef USE_XIM
 		if (NOT_NULL(r->h->Input_Context))
 		{
 		    if (!XFilterEvent(&xev, xev.xany.window))
@@ -2644,7 +2644,7 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
 		    h->event_type = xev.type;
 		}
 		else
-#endif	/* USE_XIM */
+//#endif	/* USE_XIM */
 		{
 		    rxvt_process_x_event(r, &xev);
 		}
@@ -3687,10 +3687,10 @@ rxvt_process_focusin (rxvt_t* r, XFocusChangeEvent* ev)
 	r->TermWin.focus = 1;
 	AVTS(r)->want_refresh = 1; /* Cursor needs to be refreshed */
 
-#ifdef USE_XIM
+//#ifdef USE_XIM
 	if (NOT_NULL(r->h->Input_Context))
 	    XSetICFocus(r->h->Input_Context);
-#endif
+//#endif
 
 	rxvt_change_colors_on_focus (r);
     }
@@ -3716,10 +3716,10 @@ rxvt_process_focusout (rxvt_t* r, XFocusChangeEvent* ev)
 	r->h->hidden_cursor = 0;
 #endif
 
-#ifdef USE_XIM
+//#ifdef USE_XIM
 	if (NOT_NULL(r->h->Input_Context))
 	    XUnsetICFocus(r->h->Input_Context);
-#endif
+//#endif
 
 	rxvt_change_colors_on_focus (r);
     }
@@ -4089,9 +4089,9 @@ rxvt_resize_on_configure (rxvt_t* r, unsigned int width, unsigned int height)
 	}
     }
 
-#ifdef USE_XIM
+//#ifdef USE_XIM
     rxvt_IM_resize(r);
-#endif
+//#endif
 }
 
 

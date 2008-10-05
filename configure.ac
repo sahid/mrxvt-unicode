@@ -25,8 +25,8 @@ dnl#
 dnl 2006-02-20 gi1242: If the version contains a letter, then it sometimes
 dnl produces spurious results when programs use an escape sequence to query the
 dnl terminal version.
-AC_INIT(mrxvt, 0.5.4, [jimmyzhou@users.sourceforge.net])
-AM_INIT_AUTOMAKE(mrxvt, 0.5.4)
+AC_INIT(mrxvt, 0.5.5, [jimmyzhou@users.sourceforge.net])
+AM_INIT_AUTOMAKE(mrxvt, 0.5.5)
 
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([src/main.c])
@@ -154,6 +154,7 @@ support_xpm=yes
 support_jpeg=yes
 support_png=yes
 support_xft=no
+dnl support_xim=no
 support_greek=no
 support_cjk=no
 support_ttygid=yes
@@ -209,6 +210,7 @@ if test "x$support_everything" = "xyes"; then
     support_jpeg=yes
     support_png=yes
     support_xft=yes
+dnl    support_xim=yes
     support_greek=yes
     support_cjk=yes
     support_ttygid=yes
@@ -263,6 +265,7 @@ if test "x$support_minimal" = "xyes"; then
     support_jpeg=no
     support_png=no
     support_xft=no
+dnl    support_xim=no
     support_greek=no
     support_cjk=no
     support_ttygid=yes
@@ -618,6 +621,14 @@ AC_ARG_ENABLE(
     [support_xft=$enableval]
 )
 
+
+dnl AC_ARG_ENABLE(
+dnl    xim,
+dnl    AC_HELP_STRING([--enable-xim],[enable XIM support [[no]]]),
+dnl    [support_xim=$enableval]
+dnl )
+
+
 AC_ARG_ENABLE(
     greek,
     AC_HELP_STRING([--enable-greek],[enable Greek keyboard support [[no]]]),
@@ -762,14 +773,6 @@ AC_DEFINE_UNQUOTED(MAX_PROFILES, $max_prof_option, [the max number of profiles])
 
 
 AC_ARG_WITH(
-    max-term,
-    AC_HELP_STRING([--with-max-term=NUM],[set the max number of terminal [[15]]]),
-    [max_term_option=$withval],
-    [max_term_option=15]
-)
-AC_DEFINE_UNQUOTED(MAX_PAGES, $max_term_option, [the max number of vt that can be open])
-
-AC_ARG_WITH(
 	atab-extra,
 	AC_HELP_STRING( [--with-atab-extra=%], [The extra height (as a % of the font height) active tabs should have] ),
 	[atab_extra_option=$withval],
@@ -872,6 +875,16 @@ dnl     XextAddDisplay,
 dnl     [],
 dnl     AC_MSG_ERROR([Mrxvt requires the libXext libraries.])
 dnl )
+
+
+dnl if test "x$support_xim" = "xyes"; then
+dnl    AC_CHECK_LIB(
+dnl        X11,
+dnl        XRegisterIMInstantiateCallback,
+dnl        AC_DEFINE(USE_XIM, [], [set XIM support]),
+dnl        [support_xim=no]
+dnl    )
+dnl fi
 
 
 if test "x$support_sessionmgr" = "xyes"; then
@@ -1512,6 +1525,7 @@ fi
 echo
 echo "Multi-language and font features:"
 echo "Freetype Font               : $support_xft"
+dnl echo "X Input Method              : $support_xim"
 echo "Greek keyboard              : $support_greek"
 echo "CJK multichar language      : $support_cjk"
 if test "x$support_cjk" = "xyes"; then
@@ -1532,7 +1546,6 @@ echo
 echo "Options:"
 echo "Terminal name               : $term_name_option"
 echo "Maximal profiles            : $max_prof_option"
-echo "Maximal tabs                : $max_term_option"
 echo "Extra height% of active tab : $atab_extra_option"
 echo "Radius% of tab corners      : $tab_radius_option"
 if test "x$support_linespace" = "xyes"; then

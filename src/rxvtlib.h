@@ -120,9 +120,9 @@ typedef struct
 #ifdef MULTICHAR_SET
     XFontStruct*    mfont;  /* Multichar font structure */
 #endif
-#ifdef USE_XIM
+//#ifdef USE_XIM
     XFontSet	    fontset;
-#endif
+//#endif
 #ifdef XFT_SUPPORT
     XftPattern*	    xftpattern;
     XftFont	    *xftfont, *xftpfont, *xftPfont;
