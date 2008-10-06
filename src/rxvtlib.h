@@ -127,9 +127,9 @@ typedef struct
     XftPattern*	    xftpattern;
     XftFont	    *xftfont, *xftpfont, *xftPfont;
 # ifdef MULTICHAR_SET
-    XftPattern*	    xftmpattern;
-    XftFont*	    xftmfont;
-    int		    xftmsize;
+    //XftPattern*	    xftmpattern;
+    //XftFont*	    xftmfont;
+    //int		    xftmsize;
 #  ifdef HAVE_ICONV_H
     iconv_t	    xfticonv;
 #  endif
