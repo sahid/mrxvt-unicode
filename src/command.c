@@ -7116,7 +7116,7 @@ rxvt_process_getc (rxvt_t *r, int page, text_t ch)
 	else
 	{
 	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tNon printing: 0x%X\n", ch));
-	    rxvt_process_nonprinting(r, page, ch);
+	    rxvt_process_nonprinting (r, page, ch);
 	}
 
 
@@ -7128,7 +7128,7 @@ rxvt_process_getc (rxvt_t *r, int page, text_t ch)
 	 * problem on a slow connection. Thus for now we only process X events
 	 * on screen refreshes or in rxvt_cmd_getc().
 	 */
-	if( rxvt_textbuf_has_input( r, page ) )
+	if (rxvt_textbuf_has_input (r, page))
 	    ch = *PVTS(r,page)->textbuf_start++;
 	else
 	    break;

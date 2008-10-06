@@ -1303,9 +1303,54 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    clearsel = 1;
 	}
 
+#ifdef XFT_SUPPORT
+	if (ISSET_OPTION(r, Opt_xft))
+	{
+		font = r->TermWin.xftfont;
+		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
+		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "2: %X\n", c));
+
+		c_size = Pixel2Col (extents.xOff) + 1;
+	}
+	else
+		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
+
+		//for (col = 1; col < c_size; col++)
+		/*for (; c_size--;)
+		//stp[CURCOL + col] = 0;
+		stp[CURCOL++] = 0;*/
+
+		//CURCOL += c_size;
+		//CURCOL++;
+		//MIN_IT(CURCOL, last_col - 1);
+#endif
+	{
+		XRectangle xrect;
+		XFontSet fontset = r->TermWin.fontset;
+		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
+		c_size = Pixel2Col (xrect.width) + 1;
+	}
+
+	stp[CURCOL] = c;
+	srp[CURCOL] = PVTS(r, page)->rstyle;
+	CURCOL++;
+	//PSCR(r, page).tlen[row] += c_size;
+
+	//PSCR(r, page).tlen[row] += c_size;
+
+	if (CURCOL > last_col)
+	//if (PSCR(r, page).tlen[row] + 1 > last_col)
+	{
+	    //PSCR(r, page).tlen[row] = last_col;
+	    //PSCR(r, page).tlen[row] = -1;
+	    if (PSCR(r, page).flags & Screen_Autowrap)
+		PSCR(r, page).flags |= Screen_WrapNext;
+	}
+
 	if (PSCR(r, page).flags & Screen_WrapNext)
 	{
-	    PSCR(r, page).tlen[row] = -1;
+	    //PSCR(r, page).tlen[row] = -1;
+	    PSCR(r, page).tlen[row] = 0;
 	    if (CURROW == PSCR(r, page).bscroll)
 	    {
 		rxvt_scroll_text(r, page, PSCR(r, page).tscroll,
@@ -1346,48 +1391,6 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 #endif
 #endif
 
-	stp[CURCOL] = c;
-	srp[CURCOL] = PVTS(r, page)->rstyle;
-	CURCOL++;
-
-#ifdef XFT_SUPPORT
-	if (ISSET_OPTION(r, Opt_xft))
-	{
-		font = r->TermWin.xftfont;
-		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "2: %X\n", c));
-
-		c_size = Pixel2Col (extents.xOff) + 1;
-	}
-	else
-		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
-
-		//for (col = 1; col < c_size; col++)
-		/*for (; c_size--;)
-		//stp[CURCOL + col] = 0;
-		stp[CURCOL++] = 0;*/
-
-		//CURCOL += c_size;
-		//CURCOL++;
-		//MIN_IT(CURCOL, last_col - 1);
-#endif
-	{
-		XRectangle xrect;
-		XFontSet fontset = r->TermWin.fontset;
-		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
-		c_size = Pixel2Col (xrect.width) + 1;
-	}
-
-	PSCR(r, page).tlen[row] += c_size;
-	
-
-	//if (CURCOL > last_col)
-	if (PSCR(r, page).tlen[row] >= last_col)
-	{
-	    PSCR(r, page).tlen[row] = last_col;
-	    if (PSCR(r, page).flags & Screen_Autowrap)
-		PSCR(r, page).flags |= Screen_WrapNext;
-	}
     }	/* for */
 
     if (PSCR(r, page).tlen[row] != -1)	/* XXX: think about this */
@@ -1435,8 +1438,8 @@ rxvt_scr_backspace(rxvt_t* r, int page)
     }
     else if ((PSCR(r, page).flags & Screen_WrapNext) == 0)
     {
-	//rxvt_scr_gotorc(r, page, 0, -1, RELATIVE);
-	CURCOL--;
+	rxvt_scr_gotorc(r, page, 0, -1, RELATIVE);
+	//CURCOL--;
 	/*stp = PSCR(r, page).text[CURROW];
 	if (stp[CURCOL] == 0)
 	    rxvt_scr_gotorc (r, page, 0, -1, RELATIVE);*/
@@ -1499,6 +1502,7 @@ rxvt_scr_tab(rxvt_t* r, int page, int count)
      * CURROW (if it was negative). If we're adding lines to the screen
      * structure, then CURROW is allowed to be negative.
      */
+    PSCR(r, page).tlen[CURROW] += x - CURCOL;
     CURCOL = x;
 #endif
 }
