@@ -1092,7 +1092,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     text_t	 *stp;
     rend_t	 *srp;
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines (r, %d, %.*s, %d, %d)\n", page, min(len, 36), str, nlines, len));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines (r, %d, %X, %d, %d)\n", page, *str, nlines, len));//min(len, 36), str, nlines, len));
 
     if (len <= 0)	/* sanity */
 	return;
@@ -1168,7 +1168,10 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     {
 	c = str[i++];
 
+#ifdef XFT_SUPPORT
 	XftFont* font;
+#endif
+	
 	XGlyphInfo  extents;
 	char c_size;
 	//int col;
@@ -1345,22 +1348,36 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 
 	stp[CURCOL] = c;
 	srp[CURCOL] = PVTS(r, page)->rstyle;
-
-	font = r->TermWin.xftfont;
-	XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
-	
-	c_size = Pixel2Col (extents.xOff) + 1;
-	//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
-
 	CURCOL++;
-	//for (col = 1; col < c_size; col++)
-	/*for (; c_size--;)
-	    //stp[CURCOL + col] = 0;
-	    stp[CURCOL++] = 0;*/
 
-	//CURCOL += c_size;
-	//CURCOL++;
-	//MIN_IT(CURCOL, last_col - 1);
+#ifdef XFT_SUPPORT
+	if (ISSET_OPTION(r, Opt_xft))
+	{
+		font = r->TermWin.xftfont;
+		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "2: %X\n", c));
+
+		c_size = Pixel2Col (extents.xOff) + 1;
+	}
+	else
+		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
+
+		//for (col = 1; col < c_size; col++)
+		/*for (; c_size--;)
+		//stp[CURCOL + col] = 0;
+		stp[CURCOL++] = 0;*/
+
+		//CURCOL += c_size;
+		//CURCOL++;
+		//MIN_IT(CURCOL, last_col - 1);
+#endif
+	{
+		XRectangle xrect;
+		XFontSet fontset = r->TermWin.fontset;
+		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
+		c_size = Pixel2Col (xrect.width) + 1;
+	}
+
 	PSCR(r, page).tlen[row] += c_size;
 	
 
@@ -3035,7 +3052,7 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
     }
 # endif	/* TEXT_SHADOW */
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "output entire string: %s\n", str));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "output entire string: %X\n", *str));
     //draw_string (r->Xdisplay, win, gc, x, y, str, len);
     XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x, y, (wchar_t *) str, len);
 }

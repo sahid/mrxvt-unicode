@@ -2186,7 +2186,7 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		/* 
 		 * If we have less than 4 bytes to convert,
 		 * it is possible that we did not have a full character yet,
-		 * but maybe letter (depending on the current encoding).
+		 * but maybe later (depending on the current encoding).
 		 * Just let this like this and let's see at the next iteration.
 		 */
 	    }
@@ -2205,6 +2205,8 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 	    }
 
 	    // PVTS(r, i)->textbuf_end - last_textbuf_end characters have been written to the buffer.
+	    // Note that iconv in particular does not return the number of characters converted,
+	    // but the number of characters 'converted in a non-reversible way'.
 	    countwc = PVTS(r, i)->textbuf_end - last_textbuf_end;
 	}
 	/* 
