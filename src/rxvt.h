@@ -92,9 +92,11 @@
 #ifdef HAVE_WCHAR_H
 # if defined(OS_OPENBSD) && (OS_OPENBSD_REL < 39)
 typedef unsigned int    _our_wint_t;
-typedef struct {
+typedef struct
+{
     int __count;
-    union {
+    union
+    {
 	_our_wint_t __wch;
 	char	    __wchb[4]
     } __value;
@@ -210,7 +212,8 @@ typedef struct termios ttymode_t;
 # ifdef HAVE_SGTTY_H
 #  include <sgtty.h>
 # endif
-typedef struct {
+typedef struct
+{
     struct sgttyb   sg;
     struct tchars   tc;
     struct ltchars  lc;
@@ -236,7 +239,8 @@ typedef struct {
  * openmotif as a dependency. We dont' really need it, except to set WM hints,
  * thus this ugly hack.
  */
-typedef struct {
+typedef struct
+{
     int	flags;
     int	functions;
     int	decorations;
@@ -594,7 +598,8 @@ struct rxvt_hidden;
  * the 'essential' information for reporting Mouse Events
  * pared down from XButtonEvent
  */
-struct mouse_event {
+struct mouse_event
+{
     int             clicks;
     Time            time;   /* milliseconds */
     unsigned int    state;  /* key or button mask */
@@ -822,7 +827,8 @@ struct mouse_event {
 #define ERASE		+2
 
 /* modes for rxvt_scr_page() - scroll page. used by scrollbar window */
-enum page_dirn {
+enum page_dirn
+{
     UP,
     DN,
     NO_DIR
@@ -832,7 +838,8 @@ enum page_dirn {
 #define PRIMARY	    (0)
 #define SECONDARY   (1)
 
-enum {
+enum
+{
     SBYTE = 0,
     WBYTE
 };
@@ -905,7 +912,8 @@ enum {
 #define Sel_whereMask	    0x0f
 #define Sel_CompoundText    0x10    /* last request was Compound */
 
-enum {
+enum
+{
     C0_NUL = 0x00,
             C0_SOH, C0_STX, C0_ETX, C0_EOT, C0_ENQ, C0_ACK, C0_BEL,
     C0_BS , C0_HT , C0_LF , C0_VT , C0_FF , C0_CR , C0_SO , C0_SI ,
@@ -1004,7 +1012,8 @@ enum {
 ** until we need to.  Also, be aware of usage in pixcolor_set
 */
 
-enum colour_list {
+enum colour_list
+{
     Color_fg = 0,
     Color_bg,
     minCOLOR,		/* 2 */
@@ -1085,7 +1094,8 @@ enum colour_list {
 /*
  * Resource list
  */
-enum {
+enum
+{
     Rs_display_name = 0,
     Rs_debug_masks,
     Rs_debug_level,
@@ -1243,7 +1253,8 @@ enum {
     NUM_RESOURCES
 } ;
 
-enum {
+enum
+{
     TIMEOUT_INCR = 0,
     NUM_TIMEOUTS
 } ;
@@ -1252,7 +1263,8 @@ enum {
 /*
 ** MUST sync with init.c:xa_names
 */
-enum {
+enum
+{
     XA_COMPOUND_TEXT = 0,
     XA_UTF8_STRING,
     XA_TEXT,
@@ -1496,7 +1508,8 @@ enum {
  * VARIABLES
  *****************************************************************************
  */
-struct rxvt_hidden {
+struct rxvt_hidden
+{
     unsigned char   BOOLVAR( want_clip_refresh, 1),	/* Only refresh region
 							   specified by
 							   refreshRegion */
