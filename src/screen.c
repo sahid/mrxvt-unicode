@@ -1310,31 +1310,31 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
 		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "2: %X\n", c));
 
-		c_size = Pixel2Col (extents.xOff) + 1;
+		c_size = Pixel2Col (extents.xOff);//+ 1;
 	}
 	else
-		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
-
-		//for (col = 1; col < c_size; col++)
-		/*for (; c_size--;)
-		//stp[CURCOL + col] = 0;
-		stp[CURCOL++] = 0;*/
-
-		//CURCOL += c_size;
-		//CURCOL++;
-		//MIN_IT(CURCOL, last_col - 1);
 #endif
 	{
 		XRectangle xrect;
 		XFontSet fontset = r->TermWin.fontset;
 		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
-		c_size = Pixel2Col (xrect.width) + 1;
+		c_size = Pixel2Col (xrect.width);// + 1;
 	}
 
 	stp[CURCOL] = c;
 	srp[CURCOL] = PVTS(r, page)->rstyle;
 	CURCOL++;
-	//PSCR(r, page).tlen[row] += c_size;
+
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
+
+	//for (col = 1; col < c_size; col++)
+	for (; c_size--;)
+	//stp[CURCOL + col] = 0;
+	    stp[CURCOL++] = 0; //' ';//0;
+
+	//CURCOL += c_size;
+	//CURCOL++;
+	//MIN_IT(CURCOL, last_col - 1);
 
 	//PSCR(r, page).tlen[row] += c_size;
 
@@ -3768,6 +3768,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    text_t	    t;
 
 	    t = dtp[col];
+	    //if (t == 0)
+	//	t = ' ';
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
 	    if (!clear_next &&
 		(is_same_char || t == 0 || t == ' '))
@@ -3936,8 +3938,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 
 		font = r->TermWin.xftfont;
 		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
-		//xpixel = Col2Pixel(col);
-		xpixel = extents.xOff;
+		xpixel = Col2Pixel(col);
+		//xpixel = extents.xOff;
 	    //}
 
 	    /*
