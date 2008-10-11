@@ -3952,8 +3952,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		buffer[len++] = dtp[col] = stp[col];
 		drp[col] = rend;
 
-		font = r->TermWin.xftfont;
-		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
+		//font = r->TermWin.xftfont;
+		//XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
 		xpixel = Col2Pixel(col);
 		//xpixel = extents.xOff;
 	    //}
@@ -4092,6 +4092,11 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			if (rend != srp[col])
 			    /* Different attributes. */
 			    break;
+			if (stp[col] == 0)
+			{
+			    col++;
+			    break;
+			}
 			buffer[len++] = stp[col];
 
 			if ( (stp[col] != dtp[col]) || (srp[col] != drp[col]) )
@@ -4444,7 +4449,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 				fore, back, rend,
 				((refresh_type & CLIPPED_REFRESH) ?
 					r->h->refreshRegion : None ));
-			break;
+			//break;
 		    //}
 	    }
 	    else if (fprop || fontdiff)
