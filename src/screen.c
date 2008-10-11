@@ -1173,7 +1173,6 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 #endif
 	
 	XGlyphInfo  extents;
-	char c_size;
 	//int col;
 
 	switch (c)
@@ -1303,40 +1302,55 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    clearsel = 1;
 	}
 
-#ifdef XFT_SUPPORT
-	if (ISSET_OPTION(r, Opt_xft))
+	stp[CURCOL] = c;
+	srp[CURCOL++] = PVTS(r, page)->rstyle;
+
+	if (!r->TermWin.xftmono)
 	{
+	    char c_column_width;
+	    char c_pixel_size;
+#ifdef XFT_SUPPORT
+	    if (ISSET_OPTION(r, Opt_xft))
+	    {
 		font = r->TermWin.xftfont;
 		XftTextExtents32 (r->Xdisplay, font, (FcChar32*) &c, 1, &extents);
 		//rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "2: %X\n", c));
 
-		c_size = Pixel2Col (extents.xOff);//+ 1;
-	}
-	else
+		c_pixel_size = extents.xOff;
+		//c_size = Pixel2Col (extents.xOff);//+ 1;
+	    }
+	    else
 #endif
-	{
+	    {
 		XRectangle xrect;
 		XFontSet fontset = r->TermWin.fontset;
 		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
-		c_size = Pixel2Col (xrect.width);// + 1;
+		c_pixel_size = xrect.width;
+		//c_size = Pixel2Col (xrect.width);// + 1;
+	    }
+
+	    if (c_pixel_size != r->TermWin.fwidth)
+	    {
+		//srp[CURCOL - 1] &= RS_multi & (c_pixel_size << 24); // check it is not bigger than 7 bits = 127!
+		c_column_width = Pixel2Col (c_pixel_size);
+
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_column_width));
+
+		//for (col = 1; col < c_size; col++)
+		for (; c_column_width--;)
+		    //stp[CURCOL + col] = 0;
+		{
+		    stp[CURCOL++] = 0; //' ';//0;
+		    //srp[CURCOL++] = RS_multi;
+		}
+	    }
+
+	    //CURCOL += c_size;
+	    //CURCOL++;
+	    //MIN_IT(CURCOL, last_col - 1);
+
+	    //PSCR(r, page).tlen[row] += c_size;
 	}
-
-	stp[CURCOL] = c;
-	srp[CURCOL] = PVTS(r, page)->rstyle;
-	CURCOL++;
-
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_size));
-
-	//for (col = 1; col < c_size; col++)
-	for (; c_size--;)
-	//stp[CURCOL + col] = 0;
-	    stp[CURCOL++] = 0; //' ';//0;
-
-	//CURCOL += c_size;
-	//CURCOL++;
-	//MIN_IT(CURCOL, last_col - 1);
-
-	//PSCR(r, page).tlen[row] += c_size;
 
 	if (CURCOL > last_col)
 	//if (PSCR(r, page).tlen[row] + 1 > last_col)
@@ -3771,6 +3785,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    //if (t == 0)
 	//	t = ' ';
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
+	    if (t == 0)
+		continue;
 	    if (!clear_next &&
 		(is_same_char || t == 0 || t == ' '))
 		/* screen cleared elsewhere */
