@@ -1758,10 +1758,12 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
 {
     XftPattern*	xp;
     XftFont	*xf, *pxf, *Pxf;
+#if 0
 # ifdef MULTICHAR_SET
     XftPattern*	mxp;
     XftFont*	mxf;
 # endif
+#endif
     int		resize, oldsize = r->TermWin.xftsize;
 
 

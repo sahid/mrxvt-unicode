@@ -1528,7 +1528,7 @@ rxvt_clean_cmd_page (rxvt_t* r)
 		 */
 		do
 		  {
-		    unsigned char *last_escfail = NULL;
+		    text_t *last_escfail = NULL;
 
 		    /*
 		     * Process information in the child's output buffer.
@@ -2181,7 +2181,7 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		{
 		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered and removed in tab %d.", i));
 		    (*byte_buffer)++;
-		    countwc = mbsrtowcs (PVTS(r, i)->textbuf_end, byte_buffer, 1, NULL);
+		    countwc = mbsrtowcs ((wchar_t*) PVTS(r, i)->textbuf_end, (const char**) byte_buffer, 1, NULL);
 		}
 		/* 
 		 * If we have less than 4 bytes to convert,

@@ -1323,7 +1323,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    {
 		XRectangle xrect;
 		XFontSet fontset = r->TermWin.fontset;
-		XwcTextExtents (fontset, &c, 1, NULL, &xrect);
+		XwcTextExtents (fontset, (wchar_t*) &c, 1, NULL, &xrect);
 		c_pixel_size = xrect.width;
 		//c_size = Pixel2Col (xrect.width);// + 1;
 	    }
@@ -2687,18 +2687,18 @@ rxvt_scr_printscreen(rxvt_t* r, int page, int fullhist, int pretty,
 		    *(s--)  = '\0';
 		    *s	    = 'm';
 
-		    fprintf( fd, "%s%.*s\e[0m", escsq, col-start, txt+start );
+		    fprintf( fd, "%s%.*s\e[0m", escsq, col-start, (char*) txt+start );
 		}
 
 		else
-		    fprintf( fd, "%.*s", col - start, txt + start );
+		    fprintf( fd, "%.*s", col - start, (char*) txt + start );
 
 	    }
 	} /* if( pretty ) */
 
 	else
 	    /* Vanilla text */
-	    fprintf( fd, "%.*s", (lineEnd + 1), txt );
+	    fprintf( fd, "%.*s", (lineEnd + 1), (char*) txt );
 
 	if( !linecont || PSCR(r, page).tlen[row+row_offset] != -1 )
 	    fputc( '\n', fd );
@@ -2993,8 +2993,8 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	int	sx, sy;
 	XGCValues   gcvalue;
 
-	int	    (*xtextextents)();
-	int	    unused_dir, ascent, descent;
+	//int	    (*xtextextents)();
+	//int	    unused_dir, ascent, descent;
 	//XCharStruct charstruct;
 	GContext    gid = XGContextFromGC( gc );
 	XFontStruct *font = XQueryFont( r->Xdisplay, gid);
@@ -3096,7 +3096,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 {
 #ifdef XFT_SUPPORT
     int	    fillback = 0;
-    void    (*xftdraw_string) () = NULL;
+    //void    (*xftdraw_string) () = NULL;
 
     /*switch (drawfunc)
     {
@@ -3386,7 +3386,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		showcursor; /* show the cursor */
 
 
-    signed char	morecur = 0;/* */
+    //signed char	morecur = 0;/* */
 #ifdef TTY_256COLOR
     uint16_t	fore, back; /* desired foreground/background */
 #else
@@ -3898,8 +3898,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			    fprop;
 			    /* rendition value */
 	    rend_t	    rend;
-	    XftFont* font;
-	    XGlyphInfo extents;
+	    //XftFont* font;
+	    //XGlyphInfo extents;
 
 	    if (stp[col] == 0)
 		continue;
@@ -4585,8 +4585,14 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	}
 	else if (h->oldcursor.row >= 0)
 	{
-	    XGlyphInfo extents;
+#ifdef XFT_SUPPORT
+	    //XGlyphInfo extents;
 	    XGlyphInfo extents2;
+#else
+	    XRectangle xrect;
+	    XFontSet fontset = r->TermWin.fontset;
+#endif
+
 #ifndef NO_CURSORCOLOR
 	    unsigned long   gcmask; /* Graphics Context mask */
 
@@ -4600,18 +4606,30 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    }
 #endif
 
+#ifdef XFT_SUPPORT
 	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col + morecur, &extents);
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp, h->oldcursor.col, &extents);
+	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp, h->oldcursor.col, &extents);
 	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp + h->oldcursor.col, 1, &extents2);
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
-		//Col2Pixel(h->oldcursor.col + morecur),
-		extents.xOff,
+		Col2Pixel(h->oldcursor.col + morecur),
+		//extents.xOff,
 		Row2Pixel(h->oldcursor.row),
 		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
 		extents2.xOff,
 		(unsigned int)(Height2Pixel(1)
 		/* - r->TermWin.lineSpace*/ - 1));
+#else
+	    XwcTextExtents (fontset, (wchar_t*) stp + h->oldcursor.col, 1, NULL, &xrect);
+
+	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
+		Col2Pixel(h->oldcursor.col + morecur),
+		Row2Pixel(h->oldcursor.row),
+		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
+		xrect.width,
+		(unsigned int)(Height2Pixel(1)
+		/* - r->TermWin.lineSpace*/ - 1));
+#endif
 
 #ifndef NO_CURSORCOLOR
 	    if (gcmask)	    /* restore normal colours */
