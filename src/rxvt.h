@@ -872,7 +872,7 @@ enum
 #ifdef MULTICHAR_SET
 # define RS_multi0	    0x10000000u	/* only multibyte characters */
 # define RS_multi1	    0x20000000u	/* multibyte 1st byte */
-#define RS_multi	    0x80000000u
+#define RS_notStandardSize  0x80000000u
 #define RS_multiSizeMask    0x7F000000u
 /* multibyte 2nd byte */
 # define RS_multi2	    (RS_multi0|RS_multi1)

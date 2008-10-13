@@ -1092,7 +1092,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     text_t	 *stp;
     rend_t	 *srp;
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines (r, %d, %X, %d, %d)\n", page, *str, nlines, len));//min(len, 36), str, nlines, len));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_add_lines (r, %d, \"%X...\", %d, %d)\n", page, *str, nlines, len));
 
     if (len <= 0)	/* sanity */
 	return;
@@ -1173,7 +1173,6 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 #endif
 	
 	XGlyphInfo  extents;
-	//int col;
 
 	switch (c)
 	{
@@ -1331,7 +1330,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 
 	    if (c_pixel_size != r->TermWin.fwidth)
 	    {
-		//srp[CURCOL - 1] &= RS_multi & (c_pixel_size << 24); // check it is not bigger than 7 bits = 127!
+		srp[CURCOL - 1] |= RS_notStandardSize;// & (c_pixel_size << 24); // check it is not bigger than 7 bits = 127!
 		c_column_width = Pixel2Col (c_pixel_size);
 
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\t\e[32mc_size=%d\e[0m\n", c_column_width));
@@ -1352,7 +1351,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    //PSCR(r, page).tlen[row] += c_size;
 	}
 
-	if (CURCOL > last_col)
+	if (CURCOL > last_col - 1)
 	//if (PSCR(r, page).tlen[row] + 1 > last_col)
 	{
 	    //PSCR(r, page).tlen[row] = last_col;
@@ -3782,10 +3781,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    text_t	    t;
 
 	    t = dtp[col];
-	    //if (t == 0)
-	//	t = ' ';
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
-	    if (t == 0)
+	    if (stp[col] == 0)
 		continue;
 	    if (!clear_next &&
 		(is_same_char || t == 0 || t == ' '))
@@ -3926,8 +3923,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		 )
 	       )    /* if */
 	    {
-		if (!IS_MULTI1(rend))
-		    continue;
+		//if (!IS_MULTI1(rend))
+		  continue;
 #if 0
 #ifdef MULTICHAR_SET
 		else
@@ -4070,7 +4067,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 #endif
 	    {
-		if (!fprop)
+		if (!fprop || !(drp[col] & RS_notStandardSize))
 		{
 		    int echars;
 
