@@ -337,7 +337,7 @@ rxvt_tabbar_set_visible_tabs (rxvt_t* r, Bool refresh)
 /* INTPROTO */
 static int
 draw_string (rxvt_t* r, Region clipRegion,
-	int x, int y, char* str, int len,
+	int x, int y, text_t* str, int len,
 	__attribute__((unused)) int multichar, int active)
 {
 #ifdef XFT_SUPPORT
@@ -364,7 +364,7 @@ draw_string (rxvt_t* r, Region clipRegion,
 		int		plen = 1023;
 		text_t*		pstr = buf;
 		int		olen = len;
-		char*		ostr = str;
+		text_t*		ostr = str;
 
 		/* convert to UTF-8 */
 		iconv (r->TermWin.xfticonv, (char**) &ostr,
@@ -472,7 +472,7 @@ static void
 draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 {
     Region	clipRegion;
-    char	str[MAX_DISPLAY_TAB_TXT + 1];
+    text_t	str[MAX_DISPLAY_TAB_TXT + 1];
 
 #ifdef MULTICHAR_SET
     char	buf[MAX_TAB_TXT + 1];
@@ -563,6 +563,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
     /*
      * Draw the string (different code for multichar / non-multichar).
      */
+#if 0
 #ifdef MULTICHAR_SET
     sptr = ptr = str;
     multichar = (*ptr & 0x80);
@@ -630,6 +631,9 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
     draw_string (r, clipRegion,
 	    x, y, str, STRLEN(str), False, tnum == ATAB(r));
 #endif	/* MULTICHAR_SET */
+#endif
+    draw_string (r, clipRegion,
+	    x, y, str, STRLEN(str), False, tnum == ATAB(r));
 
     /*
      * Restore clipping of the xftdrawable / gc.
@@ -1459,7 +1463,7 @@ rxvt_append_page( rxvt_t* r, int profile,
     /* synchronize icon name to tab title */
     if (ISSET_OPTION(r, Opt2_syncTabIcon))
 	rxvt_set_icon_name (r,
-		(const unsigned char*) PVTS(r, ATAB(r))->tab_title);
+		(const text_t*) PVTS(r, ATAB(r))->tab_title);
 }
 
 
@@ -1611,7 +1615,7 @@ rxvt_remove_page (rxvt_t* r, short page)
     /* synchronize icon name to tab title */
     if (ISSET_OPTION(r, Opt2_syncTabIcon))
 	rxvt_set_icon_name(r,
-		(const unsigned char*) PVTS(r, ATAB(r))->tab_title);
+		(const text_t*) PVTS(r, ATAB(r))->tab_title);
 }
 
 
@@ -1620,9 +1624,9 @@ rxvt_remove_page (rxvt_t* r, short page)
  */
 /* EXTPROTO */
 void
-rxvt_tabbar_set_title (rxvt_t* r, short page, const unsigned char TAINTED * str)
+rxvt_tabbar_set_title (rxvt_t* r, short page, const text_t TAINTED * str)
 {
-    char UNTAINTED *	    n_title;
+    text_t UNTAINTED *	    n_title;
 
     assert (str);
     assert (page >= 0 && page <= LTAB(r));
@@ -2677,10 +2681,10 @@ sync_tab_title( rxvt_t *r, int page )
       )
     {
 	/* % interpolation failed / not possible */
-	rxvt_set_term_title( r, (unsigned char*) PVTS(r, page)->tab_title );
+	rxvt_set_term_title( r, (text_t*) PVTS(r, page)->tab_title );
     }
     else
-	rxvt_set_term_title( r, (unsigned char*) wintitle );
+	rxvt_set_term_title( r, (text_t*) wintitle );
 }
 
 /*----------------------- end-of-file (C source) -----------------------*/

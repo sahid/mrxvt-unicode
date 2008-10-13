@@ -31,7 +31,7 @@
 void		 rxvt_cmd_write                   __PROTO((rxvt_t* r, int page, const unsigned char* str, unsigned int count));
 FILE*            rxvt_popen_printer               __PROTO((rxvt_t *r, const char *pipeName));
 int              rxvt_pclose_printer              __PROTO((FILE *stream));
-void             rxvt_xterm_seq                   __PROTO((rxvt_t* r, int page, int op, const char* str, unsigned char resp __attribute__((unused))));
+void             rxvt_xterm_seq                   __PROTO((rxvt_t* r, int page, int op, const text_t* str, unsigned char resp __attribute__((unused))));
 void             rxvt_tt_printf                   __PROTO((rxvt_t* r, int page, const char* fmt,...));
 void             rxvt_tt_write                    __PROTO((rxvt_t* r, int page, const unsigned char* d, int len));
 void             rxvt_pointer_unblank             __PROTO((rxvt_t* r, int page));
@@ -438,7 +438,7 @@ void             rxvt_remove_page               __PROTO((rxvt_t*, short));
 void             rxvt_activate_page             __PROTO((rxvt_t*, short));
 void		 rxvt_tabbar_set_visible_tabs   __PROTO((rxvt_t*, Bool));
 void		 refresh_tabbar_tab		__PROTO((rxvt_t*, int));
-void             rxvt_tabbar_set_title          __PROTO((rxvt_t*, short, const unsigned char TAINTED *));
+void             rxvt_tabbar_set_title          __PROTO((rxvt_t*, short, const text_t TAINTED *));
 void             rxvt_tabbar_resize             __PROTO((rxvt_t*));
 void             rxvt_tabbar_dispatcher         __PROTO((rxvt_t*, XButtonEvent*));
 void		 rxvt_tabbar_button_release     __PROTO((rxvt_t*, XButtonEvent*));

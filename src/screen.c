@@ -1304,7 +1304,9 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL++] = PVTS(r, page)->rstyle;
 
+#ifdef XFT_SUPPORT
 	if (!r->TermWin.xftmono)
+#endif
 	{
 	    char c_column_width;
 	    char c_pixel_size;
@@ -2986,8 +2988,10 @@ void
 rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	int x, int y, text_t* str, int len, int (*draw_string)())
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_draw_string_x11 (r, win, gc, region, x: %d, y: %d, str, len: %len, ...)", x, y, len));
 # ifdef TEXT_SHADOW
-    while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+    //while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+# endif	/* TEXT_SHADOW */
     {
 	int escapement;
 	int	sx, sy;
@@ -2999,7 +3003,7 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	GContext    gid = XGContextFromGC( gc );
 	XFontStruct *font = XQueryFont( r->Xdisplay, gid);
 
-	if( font == NULL ) break;
+	//if( font == NULL ) break;
 	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "handling text shadow for %s (%d)\n", str, len));
 
 	/*
@@ -3021,8 +3025,8 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	 * the shadow will be erased. Clear the rectangle ourselves, and change
 	 * to XDrawString.
 	 */
-	if( draw_string == XDrawImageString ||
-		draw_string == XDrawImageString16)
+	/*if( draw_string == XDrawImageString ||
+		draw_string == XDrawImageString16)*/
 	{
 	    XSetForeground( r->Xdisplay, gc, gcvalue.background);
 	    XSetFillStyle( r->Xdisplay, gc, FillSolid);
@@ -3031,27 +3035,32 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 		    escapement, font->ascent + font->descent);
 		    //charstruct.width, font->ascent + font->descent);
 
-	    if( draw_string == XDrawImageString )
+	    /*if( draw_string == XDrawImageString )
 		draw_string = XDrawString;
-	    else draw_string = XDrawString16;
+	    else draw_string = XDrawString16;*/
 	}
 
+# ifdef TEXT_SHADOW
 	/*
 	 * Restrict output to the above bounding box.
 	 */
-	rxvt_set_clipping( r, NULL, gc, refreshRegion,
-		x, y - font->ascent,
-		//charstruct.width, font->ascent + font->descent,
-		escapement, font->ascent + font->descent,
-		&sx, &sy);
+	if (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+	{
+		rxvt_set_clipping( r, NULL, gc, refreshRegion,
+				x, y - font->ascent,
+				//charstruct.width, font->ascent + font->descent,
+				escapement, font->ascent + font->descent,
+				&sx, &sy);
 
-	/*
-	 * Draw the shadow at the appropriate offset.
-	 */
-	XSetForeground (r->Xdisplay, gc, r->TermWin.shadow);
-	//draw_string (r->Xdisplay, win, gc, x+sx, y+sy, str, len);
-	XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x+sx, y+sy, (wchar_t *) str, len);
+		/*
+		 * Draw the shadow at the appropriate offset.
+		 */
+		XSetForeground (r->Xdisplay, gc, r->TermWin.shadow);
+		//draw_string (r->Xdisplay, win, gc, x+sx, y+sy, str, len);
+		XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x+sx, y+sy, (wchar_t *) str, len);
+	}
 
+#endif
 	/*
 	 * Restore old GC values.
 	 */
@@ -3059,15 +3068,17 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 		GCForeground | GCBackground | GCFillStyle,
 		&gcvalue);
 
+# ifdef TEXT_SHADOW
 	/*
 	 * Unclip drawing for remaining drawing.
 	 */
 	rxvt_free_clipping (r, NULL, gc, refreshRegion);
+#endif
 
 	XFreeFontInfo( NULL, font, 1);
-	break;
+	//break;
     }
-# endif	/* TEXT_SHADOW */
+//# endif	/* TEXT_SHADOW */
 
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "output entire string: %X\n", *str));
     //draw_string (r->Xdisplay, win, gc, x, y, str, len);
@@ -3327,7 +3338,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	y += r->TermWin.font->ascent;
 
 	/* Now draw the string */
-	if (draw_string)
+	//if (draw_string)
 	    rxvt_draw_string_x11 (r, PVTS(r, page)->vt, r->TermWin.gc,
 		    refreshRegion, x, y, str, len, draw_string);
     }
@@ -4612,7 +4623,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp + h->oldcursor.col, 1, &extents2);
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
-		Col2Pixel(h->oldcursor.col + morecur),
+		Col2Pixel(h->oldcursor.col), // + morecur),
 		//extents.xOff,
 		Row2Pixel(h->oldcursor.row),
 		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
@@ -4623,7 +4634,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    XwcTextExtents (fontset, (wchar_t*) stp + h->oldcursor.col, 1, NULL, &xrect);
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
-		Col2Pixel(h->oldcursor.col + morecur),
+		Col2Pixel(h->oldcursor.col), // + morecur),
 		Row2Pixel(h->oldcursor.row),
 		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
 		xrect.width,

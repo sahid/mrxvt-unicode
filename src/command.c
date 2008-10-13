@@ -200,7 +200,7 @@ void           rxvt_process_csi_seq          (rxvt_t*, int);
 #ifndef NO_FRILLS
 void           rxvt_process_window_ops       (rxvt_t*, int, const int*, unsigned int);
 #endif
-unsigned char* rxvt_get_to_st                (rxvt_t*, int, unsigned char*);
+text_t* rxvt_get_to_st                (rxvt_t*, int, text_t*);
 void           rxvt_process_dcs_seq          (rxvt_t*, int);
 void           rxvt_process_osc_seq          (rxvt_t*, int);
 void           rxvt_xwsh_seq                 (rxvt_t*, int, const char*);
@@ -1609,7 +1609,7 @@ rxvt_clean_cmd_page (rxvt_t* r)
 				Rs_holdExitTtl );
 		if( NOT_NULL( msg ) && *msg )
 		{
-		    unsigned char    tabTitle[maxLen];
+		    text_t	tabTitle[maxLen];
 
 		    rxvt_percent_interpolate( r, i, msg, STRLEN(msg),
 			    (char*) tabTitle, maxLen );
@@ -5393,7 +5393,8 @@ void
 rxvt_process_csi_seq(rxvt_t* r, int page)
 {
     int		    readpage = page;
-    unsigned char   ch, priv, i;
+    //unsigned char   ch, priv, i;
+    text_t	ch, priv, i;
     unsigned int    nargs, p;
     int		    n, ndef;
     int		    arg[ESC_ARGS];
@@ -5631,7 +5632,7 @@ rxvt_process_csi_seq(rxvt_t* r, int page)
 		    break;
 #endif
 		case 8:		/* unofficial extension */
-		    rxvt_xterm_seq(r, page, XTerm_title, APL_NAME "-" VERSION,
+		    rxvt_xterm_seq(r, page, XTerm_title, (const text_t*) APL_NAME "-" VERSION,
 			CHAR_ST);
 		    break;
 	    }	/* switch (arg[0]) */
@@ -5809,14 +5810,14 @@ rxvt_process_window_ops(rxvt_t* r, int page, const int *args, unsigned int nargs
  * ends_how is terminator used.  returned input must be free()d
  */
 /* INTPROTO */
-unsigned char  *
-rxvt_get_to_st(rxvt_t* r, int page, unsigned char *ends_how)
+text_t*
+rxvt_get_to_st(rxvt_t* r, int page, text_t *ends_how)
 {
     int		    readpage = page;
     int		    seen_esc = 0;   /* seen escape? */
     unsigned int    n = 0;
-    unsigned char*  s;
-    unsigned char   ch, string[STRING_MAX];
+    text_t*  s;
+    text_t	ch, string[STRING_MAX];
 
 
     for(;;)
@@ -5866,8 +5867,11 @@ rxvt_get_to_st(rxvt_t* r, int page, unsigned char *ends_how)
     } /* for(;;) */
 
     string[n++] = '\0';
-    if (IS_NULL(s = (unsigned char UNTAINTED *) STRNDUP (string, n)))
-	return NULL;
+    /*if (IS_NULL(s = (text_t UNTAINTED *) STRNDUP (string, n)))
+	return NULL;*/
+    s = malloc (n * sizeof (text_t));
+    for (; n + 1; n--)
+    	s[n] = string[n];
 
     *ends_how = (ch == 0x5c ? C0_ESC : ch);
 
@@ -5901,7 +5905,8 @@ void
 rxvt_process_osc_seq (rxvt_t* r, int page)
 {
     int		    readpage = page;
-    unsigned char   ch, eh, *s;
+    text_t	    ch, eh, *s;
+    //unsigned char   ch, eh, *s;
     int		    arg;
 
 
@@ -5941,7 +5946,7 @@ rxvt_process_osc_seq (rxvt_t* r, int page)
 #endif
 	    }
 	    else
-		rxvt_xterm_seq(r, page, arg, (char*) s, eh);
+		rxvt_xterm_seq(r, page, arg, (text_t*) s, eh);
 
 	    rxvt_free(s);
 	}
@@ -6103,7 +6108,7 @@ rxvt_process_xwsh_seq (rxvt_t* r, int page)
  */
 /* EXTPROTO */
 void
-rxvt_xterm_seq(rxvt_t* r, int page, int op, const char *str, unsigned char resp __attribute__((unused)))
+rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char resp __attribute__((unused)))
 {
     int		color;
     char	*buf, *name;
@@ -6121,7 +6126,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const char *str, unsigned char resp 
 	case XTerm_title:   /* Set tab / term title */
 	case XTerm_name:    /* also set icon title */
 #ifdef SET_TAB_TITLE_ON_XTERM_SEQUENCE
-	    rxvt_tabbar_set_title (r, page, (const unsigned char TAINTED*) str);
+	    rxvt_tabbar_set_title (r, page, (const text_t TAINTED*) str);
 #ifndef SET_TAB_TITLE_NOT_WIN_TITLE
 	    /*
 	     * Set both the tab title and win title. However if -stt is used,
@@ -6129,10 +6134,10 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const char *str, unsigned char resp 
 	     * rxvt_tabbar_set_title(), so we only have to set it here if +stt.
 	     */
 	    if( NOTSET_OPTION(r, Opt2_syncTabTitle ) )
-		rxvt_set_term_title(r, (const unsigned char*) str);
+		rxvt_set_term_title(r, (const text_t*) str);
 #endif
 #else
-	    rxvt_set_term_title(r, (const unsigned char*) str);
+	    rxvt_set_term_title(r, (const text_t*) str);
 #endif
 	    if( op == XTerm_title )
 		break;	/* Don't set the icon name */
@@ -6261,7 +6266,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const char *str, unsigned char resp 
 
 
 	case MRxvt_tab:
-	    rxvt_tabbar_set_title (r, page, (const unsigned char TAINTED*) str);
+	    rxvt_tabbar_set_title (r, page, (const text_t TAINTED*) str);
 	    break;
 
 	case MRxvt_tformat:

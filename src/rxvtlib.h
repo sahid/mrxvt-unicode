@@ -656,7 +656,7 @@ typedef struct
     uint16_t	    prev_nrow; /* previous rows */
     /* moved from tab_t */
     short		tab_width;	/* tab width */
-    char UNTAINTED *	tab_title;  	/* tab title */
+    text_t UNTAINTED *	tab_title;  	/* tab title */
 
     char	    *title_format;	/* Format to be used to display the tab
 					   title */
