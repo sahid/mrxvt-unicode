@@ -406,6 +406,7 @@ static const struct {
 #ifdef XFT_SUPPORT
     BOOL( "xft", "xft", Opt_xft, "use freetype font" ),
     STRG(Rs_xftfont, "xftFont", "xftfn", "fontname", "freetype font", 0),
+#if 0
 # ifdef MULTICHAR_SET
     STRG(Rs_xftmfont, "xftmFont", "xftfm", "fontname", "freetype multichar font", 0),
     STRG(Rs_xftmsz, "xftmSize", "xftmsz", "number",
@@ -415,6 +416,9 @@ static const struct {
     BOOL( "xftSlowOutput", "xftslow", Opt2_xftSlowOutput,
 	    "multichar string display in slow mode for better visual effect" ),
 # endif
+#endif
+    BOOL( "xftSlowOutput", "xftslow", Opt2_xftSlowOutput,
+	    "string display in slow mode for better visual effect" ),
     BOOL( "xftAntialias", "xftaa", Opt2_xftAntialias,
 	    "antialias of freetype font" ),
     BOOL( "xftHinting", "xftht", Opt2_xftHinting,
@@ -1469,6 +1473,7 @@ rxvt_extract_resources (
     UNSET_OPTION(r, ( Opt_Reverse | IS_OPTION4 ) );
 
 
+#if 0
     /*
      * even without resources, at least do this setup for command-line options
      * and command-line long options
@@ -1485,6 +1490,7 @@ rxvt_extract_resources (
 	else
 	    rxvt_set_multichar_encoding(r, MULTICHAR_ENCODING);
     }
+#endif
 #endif
 
 #ifdef GREEK_SUPPORT

@@ -152,7 +152,7 @@ int              rxvt_change_font_xft             __PROTO((rxvt_t* r, const char
 #endif
 void             rxvt_set_win_title               __PROTO((rxvt_t* r, Window win, const char* str));
 void             rxvt_set_term_title              __PROTO((rxvt_t* r, const unsigned char* str));
-void             rxvt_set_icon_name               __PROTO((rxvt_t* r, const unsigned char* str));
+void             rxvt_set_icon_name               __PROTO((rxvt_t* r, const text_t* str));
 void             rxvt_set_window_color            __PROTO((rxvt_t* r, int page, int idx, const char* color));
 void             rxvt_recolour_cursor             __PROTO((rxvt_t *r));
 #ifdef XFT_SUPPORT
@@ -196,7 +196,7 @@ int              rxvt_str_match                   __PROTO((const char* s1, const
 const char*      rxvt_str_skip_space              __PROTO((const char* str));
 char*            rxvt_str_trim                    __PROTO((char* str));
 int              rxvt_str_escaped                 __PROTO((char* str));
-int		 rxvt_percent_interpolate         __PROTO((rxvt_t*, int, const char *, int, char *, int));
+int		 rxvt_percent_interpolate         __PROTO((rxvt_t*, int, const text_t*, int, text_t*, int));
 char**           rxvt_splitcommastring            __PROTO((const char* cs));
 char*            rxvt_File_find                   __PROTO((const char* file, const char* ext, const char* path));
 void             rxvt_draw_shadow                 __PROTO((Display *Xdisplay, Window win, GC gc, unsigned long topShadow, unsigned long botShadow, int x, int y, int w, int h));
@@ -450,7 +450,7 @@ void             rxvt_tabbar_create             __PROTO((rxvt_t*));
 void             rxvt_tabbar_clean_exit         __PROTO((rxvt_t*));
 unsigned short   rxvt_tabbar_height             __PROTO((rxvt_t*));
 unsigned short   rxvt_tabbar_rheight            __PROTO((rxvt_t*));
-unsigned int     rxvt_tab_width                 __PROTO((rxvt_t*, const char*));
+unsigned int     rxvt_tab_width                 __PROTO((rxvt_t*, const text_t*));
 int              rxvt_is_tabbar_win             __PROTO((rxvt_t*, Window));
 void             rxvt_tabbar_draw_buttons       __PROTO((rxvt_t*));
 void		 rxvt_adjust_fd_number	        __PROTO((rxvt_t* r));

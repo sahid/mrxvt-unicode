@@ -678,9 +678,11 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(r->TermWin.xftbfont);
 # endif	/* NO_BOLDFONT */
 //# ifdef MULTICHAR_SET
+#if 0
 #  ifdef HAVE_ICONV_H
     r->TermWin.xfticonv = (iconv_t) -1;
 #  endif
+#endif
 //  SET_NULL(r->TermWin.xftmpattern);
 //    SET_NULL(r->TermWin.xftmfont);
 //# endif	/* MULTICHAR_SET */

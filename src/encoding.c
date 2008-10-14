@@ -32,6 +32,7 @@ struct KNOWN_ENCODINGS {
     void (*func) (unsigned char*, int);
 };
 
+#if 0
 #ifdef MULTICHAR_SET
 static struct KNOWN_ENCODINGS known_encodings[] = {
     {"SHIFTJIS",    ENC_SJIS,	    rxvt_decode_sjis2jis},
@@ -130,6 +131,7 @@ static struct KNOWN_ENCODINGS known_encodings[] = {
     {NULL,	    -1,		    NULL},
 };
 #endif
+#endif
 
 
 struct NFONT_LIST {
@@ -139,7 +141,7 @@ struct NFONT_LIST {
 
 static struct NFONT_LIST nfont_list[] = {
     {ENC_NOENC,	     {NFONT_LIST_NULL}},
-#ifdef MULTICHAR_SET
+//#ifdef MULTICHAR_SET
     {ENC_SJIS,	     {NFONT_LIST_EUCJ}},
     {ENC_EUCJ,	     {NFONT_LIST_EUCJ}},
     {ENC_GB,	     {NFONT_LIST_GB}},
@@ -147,7 +149,7 @@ static struct NFONT_LIST nfont_list[] = {
     {ENC_GB18030,    {NFONT_LIST_GB18030}},
     {ENC_BIG5,	     {NFONT_LIST_BIG5}},
     {ENC_EUCKR,	     {NFONT_LIST_EUCKR}},
-#endif
+//#endif
     {ENC_KOI8R,	     {NFONT_LIST_KOI8R}},
     {ENC_KOI8U,	     {NFONT_LIST_KOI8U}},
     {ENC_ISO8859_1,  {NFONT_LIST_NULL}},
@@ -168,6 +170,7 @@ static struct NFONT_LIST nfont_list[] = {
 };
 static char* isofont[] = {NFONT_LIST_ISO8859X};
 
+#if 0
 #ifdef MULTICHAR_SET
 /* Multicharacter font names, roman fonts sized to match */
 struct MFONT_LIST {
@@ -204,6 +207,7 @@ static struct MFONT_LIST mfont_list[] = {
     {ENC_ISO8859_15, {MFONT_LIST_NULL}},
 };
 #endif	/* MULTICHAR_SET */
+#endif
 
 
 struct FALLBACK_FONT_LIST {
@@ -218,7 +222,7 @@ struct ENCODING_NAME {
 
 static struct ENCODING_NAME encoding_name[] = {
     {ENC_NOENC,	     "NOENC"},
-# ifdef MULTICHAR_SET
+//# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "SJIS"},
     {ENC_EUCJ,	     "EUCJP"},
     {ENC_GB,	     "GB2312"},
@@ -226,7 +230,7 @@ static struct ENCODING_NAME encoding_name[] = {
     {ENC_GB18030,    "GB18030"},
     {ENC_BIG5,	     "BIG5"},
     {ENC_EUCKR,	     "EUCKR"},
-# endif
+//# endif
     {ENC_KOI8R,	     "KOI8R"},
     {ENC_KOI8U,	     "KOI8U"},
     {ENC_ISO8859_1,  "ISO8859-1"},
@@ -250,7 +254,7 @@ static struct ENCODING_NAME encoding_name[] = {
 #ifdef XFT_SUPPORT
 static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
     {ENC_NOENC,	     DEFAULT_XFT_FONT_NAME},
-# ifdef MULTICHAR_SET
+//# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "Kochi Gothic"},
     {ENC_EUCJ,	     "Kochi Gothic"},
     {ENC_GB,	     "SimSun"},
@@ -258,7 +262,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
     {ENC_GB18030,    "SimSun"},
     {ENC_BIG5,	     "MingLiU"},
     {ENC_EUCKR,	     "Luxi Mono"},
-# endif
+//# endif
     {ENC_KOI8R,	     "Courier New"},
     {ENC_KOI8U,	     "Courier New"},
     {ENC_ISO8859_1,  DEFAULT_XFT_FONT_NAME},
@@ -281,7 +285,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
 
 static struct FALLBACK_FONT_LIST fallback_mfont_list_x11[] = {
     {ENC_NOENC,	     "-*-*-*-r-*-*-*-*-*-c-*-iso8859-1"},
-# ifdef MULTICHAR_SET
+//# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "-*-*-*-r-*-*-*-*-*-c-*-jisx0208*-0"},
     {ENC_EUCJ,	     "-*-*-*-r-*-*-*-*-*-c-*-jisx0208*-0"},
     {ENC_GB,	     "-*-*-*-*-*-*-*-*-*-*-*-*-gb2312*-0"},
@@ -289,7 +293,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_x11[] = {
     {ENC_GB18030,    "-*-*-*-*-*-*-*-*-*-*-*-*-gb18030*-0"},
     {ENC_BIG5,	     "-*-*-*-*-*-*-*-*-*-*-c-*-big5-0"},
     {ENC_EUCKR,	     "-*-*-*-*-*-*-*-*-*-*-c-*-ksc5601*-0"},
-# endif
+//# endif
     {ENC_KOI8R,	     "-*-*-*-r-*-*-*-*-*-c-*-koi8-r"},
     {ENC_KOI8U,	     "-*-*-*-r-*-*-*-*-*-c-*-koi8-u"},
     {ENC_ISO8859_1,  "-*-*-*-r-*-*-*-*-*-c-*-iso8859-1"},
@@ -315,6 +319,7 @@ char**	    def_mfontName;
 
 
 
+#if 0
 #ifdef MULTICHAR_SET
 /* EXTPROTO */
 void
@@ -414,6 +419,7 @@ rxvt_set_multichar_encoding (rxvt_t* r, const char* str)
 }
 
 #endif		    /* MULTICHAR_SET */
+#endif
 
 
 /* EXTPROTO */
@@ -517,12 +523,15 @@ void
 rxvt_set_default_font_xft (rxvt_t* r)
 {
     if (ISSET_OPTION(r, Opt_xft) && IS_NULL(r->h->rs[Rs_xftfont]))
-	r->h->rs[Rs_xftfont] = DEFAULT_XFT_FONT_NAME;
+	//r->h->rs[Rs_xftfont] = DEFAULT_XFT_FONT_NAME;
+	r->h->rs[Rs_xftfont] = rxvt_fallback_mfont_xft (r);;
 
+#if 0
 # ifdef MULTICHAR_SET
     if (ISSET_OPTION(r, Opt_xft) && IS_NULL(r->h->rs[Rs_xftmfont]))
 	r->h->rs[Rs_xftmfont] = rxvt_fallback_mfont_xft (r);
 # endif
+#endif
 }
 #endif	/* XFT_SUPPORT */
 
@@ -551,6 +560,7 @@ rxvt_set_default_font_x11 (rxvt_t* r)
     /* Set default fonts */
     def_fontName = (char**) nfont_list[r->encoding_method].font;
 
+#if 0
 #ifdef MULTICHAR_SET
     switch (r->encoding_method)	{
     case ENC_SJIS :
@@ -593,30 +603,36 @@ rxvt_set_default_font_x11 (rxvt_t* r)
 	}
     }
 #endif
+#endif
 
     /* Found no font, fall back to ISO8859-X font */
-    if (IS_NULL(def_fontName[0]))   {
-	for (i = 0; i < MAX_NFONTS; i ++)   {
+    if (IS_NULL(def_fontName[0]))
+    {
+	for (i = 0; i < MAX_NFONTS; i ++)
+	{
 	    char*   ptr = rxvt_malloc (STRLEN(isofont[i])+4);
-#ifdef MULTICHAR_SET
+//#ifdef MULTICHAR_SET
 	    if (r->encoding_method >= ENC_ISO8859_1 &&
 		r->encoding_method <= ENC_ISO8859_15)
 		sprintf (ptr, isofont[i],
 		    r->encoding_method - ENC_ISO8859_1 + 1);
 	    else
-#endif
+//#endif
 	    sprintf (ptr, isofont[i], 1);
 	    def_fontName[i] = ptr;
 	}
     }
 
     /* Overrided by -km option or X resources */
-    for (i = 0; i < MAX_NFONTS; i ++)	{
+    for (i = 0; i < MAX_NFONTS; i ++)
+    {
 	if (IS_NULL(r->h->rs[Rs_font +i]))
 	    r->h->rs[Rs_font +i] = def_fontName[i];
+#if 0
 #ifdef MULTICHAR_SET
 	if (IS_NULL(r->h->rs[Rs_mfont +i]))
 	    r->h->rs[Rs_mfont +i] = def_mfontName[i];
+#endif
 #endif
     }
 }

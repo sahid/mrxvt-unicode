@@ -126,6 +126,7 @@ typedef struct
 #ifdef XFT_SUPPORT
     XftPattern*	    xftpattern;
     XftFont	    *xftfont, *xftpfont, *xftPfont;
+#if 0
 # ifdef MULTICHAR_SET
     //XftPattern*	    xftmpattern;
     //XftFont*	    xftmfont;
@@ -134,6 +135,7 @@ typedef struct
     iconv_t	    xfticonv;
 #  endif
 # endif
+#endif
 # ifndef NO_BOLDFONT
     XftFont*	    xftbfont;
 # endif
@@ -327,10 +329,13 @@ typedef enum
 #define Opt2_protectSecondary	    ((1LU<<2) | IS_OPTION2)
 #define Opt2_cmdAllTabs		    ((1LU<<3) | IS_OPTION2)
 #ifdef XFT_SUPPORT
+#if 0
 # ifdef MULTICHAR_SET
 #  define Opt2_xftNomFont	    ((1LU<<4) | IS_OPTION2)
 #  define Opt2_xftSlowOutput	    ((1LU<<5) | IS_OPTION2)
 # endif
+#endif
+# define Opt2_xftSlowOutput	    ((1LU<<5) | IS_OPTION2)
 # define Opt2_xftAntialias	    ((1LU<<6) | IS_OPTION2)
 # define Opt2_xftHinting	    ((1LU<<7) | IS_OPTION2)
 # define Opt2_xftAutoHint	    ((1LU<<8) | IS_OPTION2)

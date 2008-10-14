@@ -6251,7 +6251,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 #endif
 
 	case MRxvt_tabterm:	/* Set window and tab title */
-	    rxvt_tabbar_set_title (r, page, (const unsigned char TAINTED*) str);
+	    rxvt_tabbar_set_title (r, page, (const text_t TAINTED*) str);
 	    if( ISSET_OPTION(r, Opt2_syncTabTitle))
 		/*
 		 * Window title will automatically be synced, so setting it
@@ -6434,12 +6434,14 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 
 #endif /* }}} */
 
+#if 0
 #ifdef MULTICHAR_SET
 	case MRxvt_encode:
 	    /* We only change encoding method, but not font ;-) */
 	    rxvt_set_multichar_encoding (r, str);   
 	    break;
 #endif	/* MULTICHAR_SET */
+#endif
 
 	case MRxvt_opacity:
 	    if (IS_ATOM(r->h->xa[XA_NET_WM_WINDOW_OPACITY]))

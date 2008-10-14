@@ -1145,10 +1145,12 @@ enum
 #endif
 #ifdef XFT_SUPPORT
     Rs_xftfont,	/* Font name, family */
+#if 0
 # ifdef MULTICHAR_SET
     Rs_xftmfont,/* Multichar font name, family */
     Rs_xftmsz,	/* Multichar font size */
 # endif
+#endif
     Rs_xftwt,	/* Font weight */
     Rs_xftBwt,	/* Bold font weight */
     Rs_xftst,	/* Font slant */

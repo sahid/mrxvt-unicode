@@ -1531,7 +1531,6 @@ rxvt_init_font_x11 (rxvt_t *r)
     }
 #endif
 
-
     r->h->fnum = FONT0_IDX;
     idx = FNUM2IDX(r->h->fnum);
 
@@ -2272,7 +2271,7 @@ rxvt_set_term_title (rxvt_t* r, const unsigned char *str)
 
 /* EXTPROTO */
 void
-rxvt_set_icon_name (rxvt_t* r, const unsigned char *str)
+rxvt_set_icon_name (rxvt_t* r, const text_t *str)
 {
     XTextProperty   prop;
 
@@ -2772,6 +2771,7 @@ rxvt_IM_set_fontset (rxvt_t* r, int idx)
 	    STRCAT(string, r->h->rs[Rs_font + idx]);
 	    STRCAT(string, ",");
 	}
+#if 0
 # ifdef MULTICHAR_SET
 	if (r->h->rs[Rs_mfont + idx])
 	{
@@ -2779,7 +2779,9 @@ rxvt_IM_set_fontset (rxvt_t* r, int idx)
 	    STRCAT(string, ",");
 	}
 # endif
+#endif
 	string[STRLEN(string) - 1] = '\0';
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_MAIN, "rxvt_setTermFontSet: %s\n", string));
 	r->TermWin.fontset = XCreateFontSet(r->Xdisplay, string,
 			&missing_charsetlist,
 			&missing_charsetcount,

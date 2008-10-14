@@ -226,7 +226,7 @@ rxvt_str_escaped(char *str)
 /* EXTPROTO */
 int
 rxvt_percent_interpolate( rxvt_t *r, int page,
-	const char *src, int len, char *dst, int maxLen )
+	const text_t *src, int len, text_t *dst, int maxLen )
 {
     int	i=0,	/* Unexpanded string index */
 	j=0;	/* Expanded string index */
