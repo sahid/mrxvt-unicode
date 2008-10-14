@@ -515,17 +515,20 @@ rxvt_clean_exit (rxvt_t* r)
 	for (; font_num < r->TermWin.numxftfont; font_num++)
 	{
 	    XftFontClose (r->Xdisplay, r->TermWin.xftfont[font_num]);
+	    //XftPatternDestroy (r->TermWin.xftpattern[font_num]);
 	    SET_NULL (r->TermWin.xftfont[font_num]);
 	}
 	xftCloseACS (r->Xdisplay);
 
 	if ((fn = r->TermWin.xftpfont))
 	{
+	    //XftFontClose (r->Xdisplay, r->TermWin.xftpfont);
 	    SET_NULL (r->TermWin.xftpfont);
 	    xftFreeUnusedFont (r, fn);
 	}
 	if( (fn = r->TermWin.xftPfont) )
 	{
+	    //XftFontClose (r->Xdisplay, r->TermWin.xftPfont);
 	    SET_NULL (r->TermWin.xftPfont);
 	    xftFreeUnusedFont (r, fn);
 	}
@@ -535,6 +538,7 @@ rxvt_clean_exit (rxvt_t* r)
 	{
 	    for (font_num = 0; font_num < r->TermWin.numxftbfont; font_num++)
 	    {
+		//XftFontClose (r->Xdisplay, r->TermWin.xftbfont[font_num]);
 		fn = r->TermWin.xftbfont[font_num];
 		SET_NULL (r->TermWin.xftbfont[font_num]);
 		xftFreeUnusedFont (r, fn);
@@ -552,10 +556,9 @@ rxvt_clean_exit (rxvt_t* r)
 	xftFreeUnusedFont( r, fn);
 #  endif
 #endif
-
+    }
 	rxvt_free (r->TermWin.xftfont);
 	SET_NULL (r->TermWin.xftfont);   /* clear font */
-    }
 
     /*
      * XXX gi1242 2006-01-27: Xft bug. Patterns passed to XftFontOpenPattern
@@ -582,7 +585,7 @@ rxvt_clean_exit (rxvt_t* r)
 	XFreeGC (r->Xdisplay, r->TermWin.gc);
 	UNSET_GC(r->TermWin.gc);
     }
-    //XCloseDisplay (r->Xdisplay);
+    XCloseDisplay (r->Xdisplay);
     SET_NULL(r->Xdisplay);
 
 #ifdef USE_FIFO
@@ -858,18 +861,29 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 		XftFont** temp_xftbfont;
 		temp_xftbfont = rxvt_realloc (r->TermWin.xftbfont, (bfindex + 1) * sizeof (XftFont*));
 		if (temp_xftbfont == NULL)
+		{
+		    XftPatternDestroy (xftbpattern);
+		    XftPatternDestroy (xp);
+		    SET_NULL (xftbpattern);
 		    /* I could not reallocate. I exit the loop.
 		     * This is not fatale, because other fonts may have been loaded before */
 		    break;
+		}
 		else
 		    r->TermWin.xftbfont = temp_xftbfont;
 	    }
+
 	    r->TermWin.xftbfont[bfindex] = XftFontOpenPattern (r->Xdisplay, xftbpattern);
 
 	    if (IS_NULL (r->TermWin.xftbfont[bfindex]))
 	    {
 		/* fall back to normal font */
-		XftPatternDestroy (xftbpattern);
+		/* 15/10/08 Jehan: Freeing pattern crashes mrxvt at closing.
+		 * Probably same bug as the one commented by gi1242, which says:
+		 * XXX gi1242 2006-01-27: Xft bug. Patterns passed to XftFontOpenPattern
+		 * can't always be safely freed.
+		 */
+		//XftPatternDestroy (xftbpattern);
 		XftPatternDestroy (xp);
 		SET_NULL (xftbpattern);
 		continue;
@@ -903,7 +917,7 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 			rxvt_msg (DBG_ERROR, DBG_MAIN,  "Bold font (%d) too wide. Using overstrike.", findex);
 			XftFontClose (r->Xdisplay, r->TermWin.xftbfont[bfindex]);
 			SET_NULL (r->TermWin.xftbfont[bfindex]);
-			XftPatternDestroy (xftbpattern);
+			//XftPatternDestroy (xftbpattern);
 			XftPatternDestroy (xp);
 			SET_NULL (xftbpattern);
 			continue;
@@ -931,9 +945,8 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 	}
 
 	XftPatternDestroy (xp);
-	XftPatternDestroy (xftbpattern);
+	//XftPatternDestroy (xftbpattern);
 	SET_NULL (xftbpattern);
-
     }
 
     r->TermWin.numxftbfont = bfindex;
@@ -1416,7 +1429,7 @@ rxvt_init_font_xft (rxvt_t* r)
     if (num_font_loaded == 0)
     {
 	//goto Failure;
-	if (xp)
+	if (NOT_NULL (xp))
 	    XftPatternDestroy (xp);
 	if (r->TermWin.xftpattern)
 	    rxvt_free (r->TermWin.xftpattern);
@@ -1433,7 +1446,7 @@ rxvt_init_font_xft (rxvt_t* r)
 # ifndef NO_LINESPACE
     /* I must add it to the end because I run a "max" on all fonts' height
      * first. */
-	r->TermWin.fheight += r->TermWin.lineSpace;
+    r->TermWin.fheight += r->TermWin.lineSpace;
 # endif
 
     /*
