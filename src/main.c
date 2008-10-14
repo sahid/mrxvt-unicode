@@ -443,6 +443,7 @@ rxvt_close_all_tabs( rxvt_t *r)
 void
 rxvt_clean_exit (rxvt_t* r)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN, "rxvt_clean_exit (r)"));
 #ifdef HAVE_X11_SM_SMLIB_H
     if (ISSET_OPTION(r, Opt2_enableSessionMgt))
 	rxvt_session_exit (r);
@@ -512,24 +513,36 @@ rxvt_clean_exit (rxvt_t* r)
 	int font_num = 0;
 
 	for (; font_num < r->TermWin.numxftfont; font_num++)
-		XftFontClose (r->Xdisplay, r->TermWin.xftfont[font_num]);
+	{
+	    XftFontClose (r->Xdisplay, r->TermWin.xftfont[font_num]);
+	    SET_NULL (r->TermWin.xftfont[font_num]);
+	}
 	xftCloseACS (r->Xdisplay);
 
-	if( (fn = r->TermWin.xftpfont) )
+	if ((fn = r->TermWin.xftpfont))
 	{
-	    SET_NULL(r->TermWin.xftpfont);
-	    xftFreeUnusedFont( r, fn);
+	    SET_NULL (r->TermWin.xftpfont);
+	    xftFreeUnusedFont (r, fn);
 	}
 	if( (fn = r->TermWin.xftPfont) )
 	{
-	    SET_NULL(r->TermWin.xftPfont);
-	    xftFreeUnusedFont( r, fn);
+	    SET_NULL (r->TermWin.xftPfont);
+	    xftFreeUnusedFont (r, fn);
 	}
 
 #  ifndef NO_BOLDFONT
-	fn = r->TermWin.xftbfont;
-	SET_NULL(r->TermWin.xftbfont);
-	xftFreeUnusedFont( r, fn);
+	if (NOT_NULL(r->TermWin.xftbfont))
+	{
+	    for (font_num = 0; font_num < r->TermWin.numxftbfont; font_num++)
+	    {
+		fn = r->TermWin.xftbfont[font_num];
+		SET_NULL (r->TermWin.xftbfont[font_num]);
+		xftFreeUnusedFont (r, fn);
+	    }
+
+	    rxvt_free (r->TermWin.xftbfont);
+	    SET_NULL (r->TermWin.xftbfont);   /* clear font */
+	}
 #  endif
 
 #if 0
@@ -539,9 +552,10 @@ rxvt_clean_exit (rxvt_t* r)
 	xftFreeUnusedFont( r, fn);
 #  endif
 #endif
+
+	rxvt_free (r->TermWin.xftfont);
+	SET_NULL (r->TermWin.xftfont);   /* clear font */
     }
-    rxvt_free (r->TermWin.xftfont);
-    SET_NULL(r->TermWin.xftfont);   /* clear font */
 
     /*
      * XXX gi1242 2006-01-27: Xft bug. Patterns passed to XftFontOpenPattern
@@ -568,7 +582,7 @@ rxvt_clean_exit (rxvt_t* r)
 	XFreeGC (r->Xdisplay, r->TermWin.gc);
 	UNSET_GC(r->TermWin.gc);
     }
-    XCloseDisplay (r->Xdisplay);
+    //XCloseDisplay (r->Xdisplay);
     SET_NULL(r->Xdisplay);
 
 #ifdef USE_FIFO
@@ -1866,32 +1880,42 @@ isDoubleWidthFont(Display * dpy, XftFont * font)
  */
 /* INTPROTO */
 void
-xftFreeUnusedFont( rxvt_t *r, XftFont *f)
+xftFreeUnusedFont (rxvt_t *r, XftFont *f)
 {
+    if (f == NULL)
+	return;
+
     if( f && f != r->TermWin.xftpfont && f != r->TermWin.xftPfont
 #if 0
 # ifdef MULTICHAR_SET
 	    && f != r->TermWin.xftmfont
 # endif
 #endif
-# ifndef NO_BOLDFONT
-	    && f != r->TermWin.xftbfont
-# endif
       )
-      {
-      int i = 0;
-      char used_font = 0;
-      for (; i++ < r->TermWin.numxftfont;)
-      {
-      	if (f == r->TermWin.xftfont[i])
+    {
+	int i = 0;
+	char used_font = 0;
+	for (; i++ < r->TermWin.numxftfont;)
 	{
+	    if (f == r->TermWin.xftfont[i])
+	    {
 		used_font = 1;
 		break;
+	    }
 	}
-      }
-      if (! used_font)
-	XftFontClose( r->Xdisplay, f);
-      }
+# ifndef NO_BOLDFONT
+	for (i = 0; i++ < r->TermWin.numxftbfont;)
+	{
+	    if (f == r->TermWin.xftbfont[i])
+	    {
+		used_font = 1;
+		break;
+	    }
+	}
+# endif
+	if (! used_font)
+	    XftFontClose( r->Xdisplay, f);
+    }
 }
 
 /* EXTPROTO */
