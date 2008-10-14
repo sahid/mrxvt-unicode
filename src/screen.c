@@ -1087,8 +1087,11 @@ void
 rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 {
     unsigned char   checksel, clearsel;
+
     text_t c;
-    rend_t font_with_c = 0;
+    rend_t font_with_c;
+    FT_Face	face;
+
     int		 i, row, last_col;
     text_t	 *stp;
     rend_t	 *srp;
@@ -1305,31 +1308,29 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL++] = PVTS(r, page)->rstyle;
 
-
 	{
-		FT_Face	face;
-		//printf ("numxftfont = %d\n", r->TermWin.numxftfont);
-		for (; font_with_c < r->TermWin.numxftfont; font_with_c++)
+	    //printf ("numxftfont = %d\n", r->TermWin.numxftfont);
+	    for (font_with_c = 0; font_with_c < r->TermWin.numxftfont; font_with_c++)
+	    {
+		face = XftLockFace (r->TermWin.xftfont[font_with_c]);
+		if (FT_Get_Char_Index (face, (FcChar32) c) != 0)
+		    //if (FcFreeTypeCharIndex (face, (FcChar32) c) != 0)
 		{
-			face = XftLockFace (r->TermWin.xftfont[font_with_c]);
-			if (FT_Get_Char_Index (face, (FcChar32) c) != 0)
-			//if (FcFreeTypeCharIndex (face, (FcChar32) c) != 0)
-			{
-				XftUnlockFace (r->TermWin.xftfont[font_with_c]);
-				break;
-			}
-			XftUnlockFace (r->TermWin.xftfont[font_with_c]);
-			//font_with_c++;
+		    XftUnlockFace (r->TermWin.xftfont[font_with_c]);
+		    break;
 		}
+		XftUnlockFace (r->TermWin.xftfont[font_with_c]);
+		//font_with_c++;
+	    }
 
-		//printf ("font = %d, X = %X\n", font_with_c, (font_with_c << 24) & RS_multiSizeMask);
-		if (font_with_c < r->TermWin.numxftfont)
-			srp[CURCOL - 1] |= ((font_with_c ) << 24) & RS_multiSizeMask;
-		else
-			font_with_c = 0;
-		// No else needed, then none of the fonts has the right character, so we can just use the "Missing Glyph" of font 0.
-		//srp[CURCOL - 1] |= (0 << 24) & RS_multiSizeMask;
-			
+	    //printf ("font = %d, X = %X\n", font_with_c, (font_with_c << 24) & RS_multiSizeMask);
+	    if (font_with_c < r->TermWin.numxftfont)
+		srp[CURCOL - 1] |= ((font_with_c ) << 24) & RS_multiSizeMask;
+	    else
+		font_with_c = 0;
+	    // No else needed, then none of the fonts has the right character, so we can just use the "Missing Glyph" of font 0.
+	    //srp[CURCOL - 1] |= (0 << 24) & RS_multiSizeMask;
+
 	}
 
 #ifdef XFT_SUPPORT
@@ -3845,7 +3846,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    }
 
 #ifdef XFT_SUPPORT
-	    if( ISSET_OPTION(r, Opt_xft) )
+	    if (ISSET_OPTION (r, Opt_xft))
 	    {
 		/*
 		 * Only text drawn by over striking needs to be watched for
@@ -3990,13 +3991,13 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    len = 0;
 	    //if (stp[col] != 0)
 	    //{
-		buffer[len++] = dtp[col] = stp[col];
-		drp[col] = rend;
+	    buffer[len++] = dtp[col] = stp[col];
+	    drp[col] = rend;
 
-		//font = r->TermWin.xftfont;
-		//XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
-		xpixel = Col2Pixel(col);
-		//xpixel = extents.xOff;
+	    //font = r->TermWin.xftfont;
+	    //XftTextExtents32 (r->Xdisplay, font, (FcChar32*) stp, col, &extents);
+	    xpixel = Col2Pixel(col);
+	    //xpixel = extents.xOff;
 	    //}
 
 	    /*
@@ -4111,7 +4112,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 #endif
 	    {
-		if (!fprop || !(drp[col] & RS_notStandardSize))
+		if (/*!fprop ||*/ !(drp[col] & RS_notStandardSize))
 		{
 		    int echars;
 
@@ -4427,8 +4428,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 # ifdef XFT_SUPPORT
 		    if( ISSET_OPTION(r, Opt_xft) )
 		    {
-			SWAP_IT( r->TermWin.xftfont[0], r->TermWin.xftbfont, // TODO
-				XftFont*);
+			SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, // TODO
+				XftFont**);
 		    }
 		    else
 # endif
@@ -4462,7 +4463,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 # ifdef XFT_SUPPORT
 		if( ISSET_OPTION(r, Opt_xft) )
 		{
-		    SWAP_IT( r->TermWin.xftfont[0], r->TermWin.xftbfont, XftFont*);
+		    SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, XftFont**);
 		}
 		else
 # endif
@@ -4588,7 +4589,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #ifdef XFT_SUPPORT
 	if( ISSET_OPTION(r, Opt_xft) )
 	{
-	    SWAP_IT( r->TermWin.xftfont[0], r->TermWin.xftbfont, XftFont*); // TODO
+	    SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, XftFont**); // TODO
 	}
 	else
 # endif

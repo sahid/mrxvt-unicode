@@ -124,9 +124,9 @@ typedef struct
     XFontSet	    fontset;
 //#endif
 #ifdef XFT_SUPPORT
-    XftPattern*	    xftpattern;
+    XftPattern	    **xftpattern;
     XftFont	    **xftfont, *xftpfont, *xftPfont;
-    int		numxftfont;
+    int		    numxftfont;
 #if 0
 # ifdef MULTICHAR_SET
     //XftPattern*	    xftmpattern;
@@ -138,7 +138,8 @@ typedef struct
 # endif
 #endif
 # ifndef NO_BOLDFONT
-    XftFont*	    xftbfont;
+    XftFont**	    xftbfont;
+    int		    numxftbfont;
 # endif
     char	    xftfnmono;	/* font is mono? */
     char	    xftmono;	/* font and mfont are mono? */
