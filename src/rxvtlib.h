@@ -125,7 +125,8 @@ typedef struct
 //#endif
 #ifdef XFT_SUPPORT
     XftPattern*	    xftpattern;
-    XftFont	    *xftfont, *xftpfont, *xftPfont;
+    XftFont	    **xftfont, *xftpfont, *xftPfont;
+    int		numxftfont;
 #if 0
 # ifdef MULTICHAR_SET
     //XftPattern*	    xftmpattern;

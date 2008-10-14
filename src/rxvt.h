@@ -903,7 +903,7 @@ enum
 
 #define RS_fontMask	    (RS_acsFont|RS_ukFont)
 #define RS_baseattrMask	    (RS_Bold|RS_Blink|RS_RVid|RS_Uline)
-#define RS_attrMask	    (RS_baseattrMask|RS_fontMask|RS_multiMask)
+#define RS_attrMask	    (RS_baseattrMask|RS_fontMask|RS_multiMask|RS_multiSizeMask)
 
 #define Sel_none	    0	/* Not waiting */
 #define Sel_normal	    0x01    /* normal selection */

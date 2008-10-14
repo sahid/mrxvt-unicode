@@ -521,7 +521,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 
 	    y -= r->TermWin.xftpfont->descent;
 	}
-	else y -= r->TermWin.xftfont->descent;
+	else y -= r->TermWin.xftfont[0]->descent; // TODO
     }
     else
 #endif /* XFT_SUPPORT */
@@ -2365,7 +2365,6 @@ rxvt_tabbar_clean_exit (rxvt_t* r)
 {
     register int    i;
 
-
     UNSET_WIN(r->tabBar.win);	/* destroyed by XDestroySubwindows */
 
     /* free resource strings */
@@ -2477,7 +2476,7 @@ rxvt_tab_width (rxvt_t *r, const text_t* str)
 	if (ISSET_OPTION (r, Opt_xft) && (NULL != r->tabBar.xftwin))
 	{
 	    XGlyphInfo extents;
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) str, len, &extents);
+	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont[0], (FcChar32*) str, len, &extents); // TODO
 	    //return (2 * TXT_XOFF + Width2Pixel(len));
 	    return (2 * TXT_XOFF + extents.xOff);
 	}
