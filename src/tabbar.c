@@ -241,7 +241,7 @@ rxvt_tabbar_set_visible_tabs (rxvt_t* r, Bool refresh)
     if( ISSET_OPTION(r, Opt_xft) && r->TermWin.xftpfont )
     {
 	int	i;
-	short	tabWidth = rxvt_tab_width( r, NULL);	/* Firefox style tabs
+	short	tabWidth = rxvt_tab_width (r, NULL);	/* Firefox style tabs
 							   don't need the tab
 							   title */
 	int	numVisible = (TAB_SPACE - TAB_BORDER)
@@ -552,16 +552,20 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 	 */
 	if( ISSET_OPTION( r, Opt3_chopEnd ) )
 	{
-	    STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
-	    str[r->TermWin.maxTabWidth] = '\0';
+	    //STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
+	    MEMCPY (str, PVTS(r,tnum)->tab_title , 2 * sizeof (text_t)); //r->TermWin.maxTabWidth);
+	    //str[r->TermWin.maxTabWidth] = '\0';
+	    str[2] = '\0';
 	}
 	else
 	{
 	    int title_len = STRLEN(PVTS(r,tnum)->tab_title);
 	    int excess = max(title_len - r->TermWin.maxTabWidth, 0);
 
-	    STRNCPY( str, PVTS(r,tnum)->tab_title + excess,
-		     r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
+	    //STRNCPY( str, PVTS(r,tnum)->tab_title + excess,
+		//     r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
+	    MEMCPY( str, PVTS(r,tnum)->tab_title + excess,
+		     2 * sizeof (text_t)); //r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
 	}
     }
 
@@ -1641,7 +1645,7 @@ rxvt_tabbar_set_title (rxvt_t* r, short page, const text_t TAINTED * str)
 
     while (str_len < MAX_TAB_TXT)
     {
-	if (str + str_len == 0)
+	if (str[str_len] == 0)
 	    break;
 	str_len++;
     }
@@ -1671,7 +1675,7 @@ rxvt_tabbar_set_title (rxvt_t* r, short page, const text_t TAINTED * str)
     {
 	/* adjust visible tabs */
 	rxvt_tabbar_set_visible_tabs (r, True);
-	refresh_tabbar_tab(r, page);
+	refresh_tabbar_tab (r, page);
     }
 
     /* synchronize terminal title with active tab title */

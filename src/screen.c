@@ -3064,7 +3064,9 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	    XSetFillStyle( r->Xdisplay, gc, FillSolid);
 	    XFillRectangle( r->Xdisplay, win, gc,
 		    x, y - font->ascent,
-		    escapement, font->ascent + font->descent);
+		    Width2Pixel (len * 2), // TODO
+		    //escapement,
+		    font->ascent + font->descent);
 		    //charstruct.width, font->ascent + font->descent);
 
 	    /*if( draw_string == XDrawImageString )
@@ -3081,7 +3083,9 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 		rxvt_set_clipping( r, NULL, gc, refreshRegion,
 				x, y - font->ascent,
 				//charstruct.width, font->ascent + font->descent,
-				escapement, font->ascent + font->descent,
+				//escapement,
+				Width2Pixel (len * 2),
+				font->ascent + font->descent,
 				&sx, &sy);
 
 		/*
@@ -4499,21 +4503,21 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		CLEAR_CHARS( r, page, already_cleared,
 			xpixel, ypixelc, len);
-		for (i = 0; i < wlen; i++)
+		//for (i = 0; i < len; i++)
 		    /* don't draw empty strings */
-		    if (buffer[i] != ' ')
+		    //if (buffer[i] != ' ')
 		    {
 			rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "CL Drawing '%.60s' (%d)\n", buffer, len));
 
 			rxvt_scr_draw_string (r, page, xpixel, ypixelc,
-				buffer, wlen, drawfunc,
+				buffer, len, drawfunc,
 				fore, back, rend,
 				((refresh_type & CLIPPED_REFRESH) ?
 					r->h->refreshRegion : None ));
 			break;
 		    }
 	    }
-	    else if (fprop || fontdiff)
+	    else //if (fprop || fontdiff)
 	    {
 		/* single glyph writing */
 		unsigned long   pixel;
@@ -4535,15 +4539,17 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));
 	    }
+#if 0
 	    else
 	    {
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "NC Drawing '%.60s' (%d)\n", buffer, len));
 		rxvt_scr_draw_string (r, page,
-			xpixel, ypixelc, buffer, wlen, image_drawfunc,
+			xpixel, ypixelc, buffer, wlen, XFT_DRAW_IMAGE_STRING_8, //image_drawfunc,
 			fore, back, rend,
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));
 	    }
+#endif
 
 #ifndef NO_BOLDOVERSTRIKE
 # ifdef NO_BOLDOVERSTRIKE_MULTI

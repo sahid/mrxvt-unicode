@@ -2553,7 +2553,7 @@ rxvt_refresh_vtscr_if_needed( rxvt_t *r )
 
 /* INTPROTO */
 text_t
-rxvt_cmd_getc(rxvt_t *r, int* p_page)
+rxvt_cmd_getc (rxvt_t *r, int* p_page)
 {
     int		    selpage = *p_page, retpage;
     fd_set	    readfds;
@@ -2667,7 +2667,6 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
 	}
 
 
-
 	/*
 	 * We are done processing our X events. Check to see if we have any data
 	 * pending in our input buffer.
@@ -2682,12 +2681,12 @@ rxvt_cmd_getc(rxvt_t *r, int* p_page)
 	     * choose. Note, that rxvt_find_cmd_child() will favor returning the
 	     * active tab.
 	     */
-	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_find_cmd_child: find %d\n", retpage));
+	    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_find_child_with_output: found %d\n", retpage));
 
 	    *p_page = retpage;
 	    return *(PVTS(r, *p_page)->textbuf_start)++;
+	    //return *(PVTS(r, selpage)->textbuf_start)++;
 	}
-
 
 	/*
 	 * The command input buffer is empty and we have no pending X events.
@@ -5813,6 +5812,7 @@ rxvt_process_window_ops(rxvt_t* r, int page, const int *args, unsigned int nargs
 text_t*
 rxvt_get_to_st(rxvt_t* r, int page, text_t *ends_how)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_get_to_st ( r, %d, terminator_pointer)\n", page));
     int		    readpage = page;
     int		    seen_esc = 0;   /* seen escape? */
     unsigned int    n = 0;
@@ -5860,7 +5860,7 @@ rxvt_get_to_st(rxvt_t* r, int page, text_t *ends_how)
 	    continue; /* do nothing */
 	}
 
-	if (n < sizeof(string) - 1)
+	if (n < STRING_MAX - 1) //sizeof(string) - 1)
 	    string[n++] = ch;
 
 	seen_esc = 0;
@@ -5869,7 +5869,7 @@ rxvt_get_to_st(rxvt_t* r, int page, text_t *ends_how)
     string[n++] = '\0';
     /*if (IS_NULL(s = (text_t UNTAINTED *) STRNDUP (string, n)))
 	return NULL;*/
-    s = malloc (n * sizeof (text_t));
+    s = rxvt_malloc (n-- * sizeof (text_t));
     for (; n + 1; n--)
     	s[n] = string[n];
 
@@ -5909,7 +5909,6 @@ rxvt_process_osc_seq (rxvt_t* r, int page)
     //unsigned char   ch, eh, *s;
     int		    arg;
 
-
     rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_process_osc_seq( r, %d). Active page %d\n", page, ATAB(r)));
 
     arg = 0;
@@ -5918,17 +5917,24 @@ rxvt_process_osc_seq (rxvt_t* r, int page)
 	ch = rxvt_cmd_getc(r, &readpage);
 	if( readpage == -1 )
 	{
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\treadpage is -1!!!\n"));
 	    rxvt_set_escfail( r, page, 1 );
 	    return;
 	}
 
 	if( isdigit(ch) )
+	{
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ before is %d. ch is %d\n", arg, ch));
 	    arg = arg * 10 + (ch - '0');
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ after is %d\n", arg));
+	}
 	else
 	    break;
     }
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ at end is %d\n", arg));
 
 
+		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tch is %d\n", ch));
     if (ch == ';')
     {
 	s = rxvt_get_to_st(r, page, &eh);
@@ -6110,8 +6116,9 @@ rxvt_process_xwsh_seq (rxvt_t* r, int page)
 void
 rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char resp __attribute__((unused)))
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_xterm_seq ( r, page: %d, op: %d, str, ...)\n", page, op));
     int		color;
-    char	*buf, *name;
+    text_t	*buf, *name;
 #if defined(TRANSPARENT) || defined(BACKGROUND_IMAGE)
     int		changed = 0;
 # ifdef TINTING_SUPPORT
@@ -6144,7 +6151,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 	    /* else FALL THROUGH */
 
 	case XTerm_iconName:
-	    rxvt_set_icon_name(r, (const unsigned char*) str);
+	    rxvt_set_icon_name(r, (const text_t*) str);
 	    /*
 	     * 2006-05-30 gi1242: -sti means sync the icon name to the tab
 	     * title, and NOT the other way around.
@@ -6157,7 +6164,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 	    break;
 
 	case XTerm_Color:
-	    for (buf = (char *)str; buf && *buf;)
+	    for (buf = (text_t *)str; buf && *buf;)
 	    {
 		if (IS_NULL(name = STRCHR(buf, ';')))
 		    break;
