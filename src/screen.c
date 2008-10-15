@@ -1323,13 +1323,13 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 		//font_with_c++;
 	    }
 
-	    //printf ("font = %d, X = %X\n", font_with_c, (font_with_c << 24) & RS_multiSizeMask);
+	    //printf ("font = %d, X = %X\n", font_with_c, (font_with_c << 24) & RS_fontID);
 	    if (font_with_c < r->TermWin.numxftfont)
-		srp[CURCOL - 1] |= ((font_with_c ) << 24) & RS_multiSizeMask;
+		srp[CURCOL - 1] |= ((font_with_c ) << 24) & RS_fontID;
 	    else
 		font_with_c = 0;
 	    // No else needed, then none of the fonts has the right character, so we can just use the "Missing Glyph" of font 0.
-	    //srp[CURCOL - 1] |= (0 << 24) & RS_multiSizeMask;
+	    //srp[CURCOL - 1] |= (0 << 24) & RS_fontID;
 
 	}
 
@@ -2947,7 +2947,7 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 	XftDraw* win, XftColor* fore, int x, int y, text_t* str, int len)
 {
     XftFont *font;
-    int fontid = ((rend & RS_multiSizeMask) >> 24);
+    int fontid = ((rend & RS_fontID) >> 24);
     //printf ("fontid = %X\n", rend);
 
     /*
@@ -3139,8 +3139,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 {
 #ifdef XFT_SUPPORT
     int	    fillback = 0;
-    int fontid = ((rend & RS_multiSizeMask) >> 24);
-    //printf ("fontid2 = %d\n", fontid);
+    int fontid = ((rend & RS_fontID) >> 24);
     //void    (*xftdraw_string) () = NULL;
 
     /*switch (drawfunc)
@@ -3178,13 +3177,31 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	 */
 	//if (fillback)
 	{
-	    XGlyphInfo extents;
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont[fontid], (XftChar32*) str, len, &extents); // TODO
-	    XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
-		    x, y,
-		    extents.xOff, 
-		    Height2Pixel(1));
-		    //extents.yOff);
+	    if (len == 1)
+	    { // To deal with cursor upon a single character.
+		XGlyphInfo extents;
+		int width_to_draw;
+    
+		XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont[fontid], (XftChar32*) str, len, &extents); // TODO
+		if (extents.xOff <= Width2Pixel (1))
+		    width_to_draw = Width2Pixel (1);
+		else
+		    width_to_draw = Width2Pixel (2);
+
+		XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
+			x, y,
+			//extents.xOff, 
+			width_to_draw,
+			//Width2Pixel(1),
+			Height2Pixel(1));
+	    }
+	    else
+		XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
+			x, y,
+			//extents.xOff, 
+			Width2Pixel(len * 2),
+			Height2Pixel(1));
+	    //extents.yOff);
 
 		    // Width2Pixel(len * 2), Height2Pixel(1));
 		    //extents.width, Height2Pixel(1)); //extents.height);
@@ -3943,6 +3960,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			    fprop;
 			    /* rendition value */
 	    rend_t	    rend;
+	    int fontid;
 	    //XftFont* font;
 	    //XGlyphInfo extents;
 
@@ -4180,6 +4198,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	     */
 	    fore = GET_FGCOLOR(rend);
 	    back = GET_BGCOLOR(rend);
+	    fontid = ((rend & RS_fontID) >> 24);
 	    rend = GET_ATTR(rend);
 
 	    switch (rend & RS_fontMask)
@@ -4428,7 +4447,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 # ifdef XFT_SUPPORT
 		    if( ISSET_OPTION(r, Opt_xft) )
 		    {
-			SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, // TODO
+			SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont,
 				XftFont**);
 		    }
 		    else
@@ -4549,13 +4568,13 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #ifdef XFT_SUPPORT
 		if (ISSET_OPTION(r, Opt_xft) && PVTS(r, page)->xftvt)
 		{
-		    if (r->TermWin.xftfont[0]->descent > 1) // TODO
+		    if (r->TermWin.xftfont[fontid]->descent > 1)
 			XDrawLine(r->Xdisplay, drawBuffer,
 			    r->TermWin.gc,
 			    xpixel,
-			    ypixelc + r->TermWin.xftfont[0]->ascent + 1,
+			    ypixelc + r->TermWin.xftfont[fontid]->ascent + 1,
 			    xpixel + Width2Pixel(len) - 1,
-			    ypixelc + r->TermWin.xftfont[0]->ascent + 1);
+			    ypixelc + r->TermWin.xftfont[fontid]->ascent + 1);
 		}
 		else
 #endif
@@ -4589,7 +4608,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #ifdef XFT_SUPPORT
 	if( ISSET_OPTION(r, Opt_xft) )
 	{
-	    SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, XftFont**); // TODO
+	    SWAP_IT( r->TermWin.xftfont, r->TermWin.xftbfont, XftFont**);
 	}
 	else
 # endif
@@ -4632,11 +4651,11 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	{
 #ifdef XFT_SUPPORT
 	    //XGlyphInfo extents;
-	    XGlyphInfo extents2;
-#else
+	    //XGlyphInfo extents2;
+	    //int fontid = ((rend & RS_fontID) >> 24);
+#endif
 	    XRectangle xrect;
 	    XFontSet fontset = r->TermWin.fontset;
-#endif
 
 #ifndef NO_CURSORCOLOR
 	    unsigned long   gcmask; /* Graphics Context mask */
@@ -4652,19 +4671,25 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 
 #ifdef XFT_SUPPORT
+	if (ISSET_OPTION(r, Opt_xft) && r->TermWin.xftfont)
+	{
 	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftmfont, (FcChar32*) stp, h->oldcursor.col + morecur, &extents);
 	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont, (FcChar32*) stp, h->oldcursor.col, &extents);
-	    XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont[0], (FcChar32*) stp + h->oldcursor.col, 1, &extents2); // TODO
+	    //XftTextExtents32 (r->Xdisplay, r->TermWin.xftfont[fontid], (FcChar32*) stp + h->oldcursor.col, 1, &extents2); // TODO
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
-		Col2Pixel(h->oldcursor.col), // + morecur),
+		    Col2Pixel(h->oldcursor.col), // + morecur),
 		//extents.xOff,
 		Row2Pixel(h->oldcursor.row),
 		//(unsigned int)(Width2Pixel(1 + (morecur?1:0)) - 1),
-		extents2.xOff,
+		(unsigned int)(Width2Pixel(1)),
+		//extents2.xOff,
 		(unsigned int)(Height2Pixel(1)
-		/* - r->TermWin.lineSpace*/ - 1));
-#else
+			/* - r->TermWin.lineSpace*/ - 1));
+	}
+	else
+#endif
+	{
 	    XwcTextExtents (fontset, (wchar_t*) stp + h->oldcursor.col, 1, NULL, &xrect);
 
 	    XDrawRectangle(r->Xdisplay, drawBuffer, r->TermWin.gc,
@@ -4674,7 +4699,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		xrect.width,
 		(unsigned int)(Height2Pixel(1)
 		/* - r->TermWin.lineSpace*/ - 1));
-#endif
+	}
 
 #ifndef NO_CURSORCOLOR
 	    if (gcmask)	    /* restore normal colours */

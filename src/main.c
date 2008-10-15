@@ -1422,7 +1422,7 @@ rxvt_init_font_xft (rxvt_t* r)
 	num_font_loaded++;
 	fname = strtok (NULL, ",");
     }
-    while (NULL != fname);
+    while (NULL != fname || num_font_loaded == 8);
 
     r->TermWin.numxftfont = num_font_loaded;
 

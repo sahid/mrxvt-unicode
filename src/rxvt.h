@@ -873,7 +873,7 @@ enum
 # define RS_multi0	    0x10000000u	/* only multibyte characters */
 # define RS_multi1	    0x20000000u	/* multibyte 1st byte */
 #define RS_notStandardSize  0x80000000u
-#define RS_multiSizeMask    0x7F000000u
+#define RS_fontID	    0x7F000000u
 /* multibyte 2nd byte */
 # define RS_multi2	    (RS_multi0|RS_multi1)
 /* multibyte mask */
@@ -903,7 +903,7 @@ enum
 
 #define RS_fontMask	    (RS_acsFont|RS_ukFont)
 #define RS_baseattrMask	    (RS_Bold|RS_Blink|RS_RVid|RS_Uline)
-#define RS_attrMask	    (RS_baseattrMask|RS_fontMask|RS_multiMask|RS_multiSizeMask)
+#define RS_attrMask	    (RS_baseattrMask|RS_fontMask|RS_multiMask|RS_fontID)
 
 #define Sel_none	    0	/* Not waiting */
 #define Sel_normal	    0x01    /* normal selection */
