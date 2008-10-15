@@ -3142,15 +3142,15 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
     int fontid = ((rend & RS_fontID) >> 24);
     //void    (*xftdraw_string) () = NULL;
 
-    /*switch (drawfunc)
+    switch (drawfunc)
     {
 	case	XFT_DRAW_IMAGE_STRING_8:
 	case	XFT_DRAW_IMAGE_STRING_16:
 	    fillback = 1;
 	    break;
-    }*/
-    if (drawfunc == XFT_DRAW_IMAGE_STRING)
-	fillback = 1;
+    }
+    /*if (drawfunc == XFT_DRAW_IMAGE_STRING)
+	fillback = 1;*/
 
     if (ISSET_OPTION(r, Opt_xft) && PVTS(r, page)->xftvt)// && xftdraw_string)
     {
@@ -3175,7 +3175,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	 * Xft does not support XDrawImageString, so we need to clear the
 	 * background of text by ourselves.
 	 */
-	//if (fillback)
+	if (fillback)
 	{
 	    if (len == 1)
 	    { // To deal with cursor upon a single character.
@@ -4499,10 +4499,10 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		CLEAR_CHARS( r, page, already_cleared,
 			xpixel, ypixelc, len);
-		//for (i = 0; i < len; i++)
+		for (i = 0; i < wlen; i++)
 		    /* don't draw empty strings */
-		  //  if (buffer[i] != ' ')
-		    //{
+		    if (buffer[i] != ' ')
+		    {
 			rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "CL Drawing '%.60s' (%d)\n", buffer, len));
 
 			rxvt_scr_draw_string (r, page, xpixel, ypixelc,
@@ -4510,8 +4510,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 				fore, back, rend,
 				((refresh_type & CLIPPED_REFRESH) ?
 					r->h->refreshRegion : None ));
-			//break;
-		    //}
+			break;
+		    }
 	    }
 	    else if (fprop || fontdiff)
 	    {
