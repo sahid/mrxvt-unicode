@@ -443,7 +443,7 @@ draw_string (rxvt_t* r, Region clipRegion,
 		    active ? &(r->tabBar.xftfg) : &(r->tabBar.xftifg),
 		    x, y, str, len);
 
-	    if( r->TermWin.xftpfont )
+	    if (r->TermWin.xftpfont)
 	    {
 		/*XftTextExtents8( r->Xdisplay, r->TermWin.xftpfont,
 			(unsigned char*) str, len, &ginfo);*/
@@ -451,7 +451,8 @@ draw_string (rxvt_t* r, Region clipRegion,
 			(FcChar32*) str, len, &ginfo);
 		return ginfo.width;
 	    }
-	    else return Width2Pixel( len );
+	    else
+		return Width2Pixel (len);
 	}
 	else
 # endif	/* XFT_SUPPORT */
@@ -459,7 +460,7 @@ draw_string (rxvt_t* r, Region clipRegion,
 	    XSetFont (r->Xdisplay, r->tabBar.gc, r->TermWin.font->fid);
 	    rxvt_draw_string_x11 (r, r->tabBar.win, r->tabBar.gc,
 		    clipRegion, x, y, str, len, XDrawString);
-	    return Width2Pixel( len );
+	    return Width2Pixel (len);
 	}
     }
 }
@@ -553,7 +554,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 	if( ISSET_OPTION( r, Opt3_chopEnd ) )
 	{
 	    //STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
-	    MEMCPY (str, PVTS(r,tnum)->tab_title , 2 * sizeof (text_t)); //r->TermWin.maxTabWidth);
+	    MEMCPY (str, PVTS(r,tnum)->tab_title , sizeof (text_t) * 5); //r->TermWin.maxTabWidth);
 	    //str[r->TermWin.maxTabWidth] = '\0';
 	    str[2] = '\0';
 	}
@@ -564,8 +565,8 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 
 	    //STRNCPY( str, PVTS(r,tnum)->tab_title + excess,
 		//     r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
-	    MEMCPY( str, PVTS(r,tnum)->tab_title + excess,
-		     2 * sizeof (text_t)); //r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
+	    MEMCPY (str, PVTS(r,tnum)->tab_title + excess,
+		     5 * sizeof (text_t)); //r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
 	}
     }
 
@@ -643,7 +644,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 #endif	/* MULTICHAR_SET */
 #endif
     draw_string (r, clipRegion,
-	    x, y, str, STRLEN(str), False, tnum == ATAB(r));
+	    x, y, str, 5 /*STRLEN(str)*/, False, tnum == ATAB(r));
 
     /*
      * Restore clipping of the xftdrawable / gc.
@@ -1684,10 +1685,8 @@ rxvt_tabbar_set_title (rxvt_t* r, short page, const text_t TAINTED * str)
 	sync_tab_title( r, ATAB(r) );
 
     /* synchronize icon name to tab title */
-    if (ISSET_OPTION(r, Opt2_syncTabIcon) &&
-	(page == ATAB(r)))
-	rxvt_set_icon_name(r,
-		(const unsigned char*) PVTS(r, ATAB(r))->tab_title);
+    if (ISSET_OPTION(r, Opt2_syncTabIcon) && page == ATAB(r))
+	rxvt_set_icon_name (r, (const text_t*) PVTS(r, ATAB(r))->tab_title);
 }
 
 

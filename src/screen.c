@@ -175,7 +175,7 @@ void static inline rxvt_clear_area       (rxvt_t*, int page, int x, int y, unsig
 void static inline rxvt_fill_rectangle   (rxvt_t*, int page, int x, int y, unsigned int w, unsigned int h);
 void
 rxvt_scr_draw_string (rxvt_t* r, int page,
-	int x, int y, text_t* str, int len, int drawfunc,
+	int x, int y, text_t* str, int len, int cols, int drawfunc,
 	uint16_t fore, uint16_t back,
 	__attribute__((unused)) rend_t rend, Region refreshRegion);
 void rxvt_scr_adjust_col          (rxvt_t*, int, unsigned int);
@@ -3020,7 +3020,7 @@ void
 rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	int x, int y, text_t* str, int len, int (*draw_string)())
 {
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_draw_string_x11 (r, win, gc, region, x: %d, y: %d, str, len: %len, ...)", x, y, len));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_draw_string_x11 (r, win, gc, region, x: %d, y: %d, str, len: %d, ...)", x, y, len));
 # ifdef TEXT_SHADOW
     //while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
 # endif	/* TEXT_SHADOW */
@@ -3137,10 +3137,12 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 /* INTPROTO */
 void
 rxvt_scr_draw_string (rxvt_t* r, int page,
-	int x, int y, text_t* str, int len, int drawfunc,
+	int x, int y, text_t* str, int len, int cols, int drawfunc,
 	uint16_t fore, uint16_t back,
 	__attribute__((unused)) rend_t rend, Region refreshRegion)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_draw_string (r, page: %d, x: %d, y: %d, str, len: %d, cols: %d, ...)",
+		page, x, y, len, cols));
 #ifdef XFT_SUPPORT
     int	    fillback = 0;
     int fontid = ((rend & RS_fontID) >> 24);
@@ -3181,7 +3183,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	 */
 	if (fillback)
 	{
-	    if (len == 1)
+	    /*if (len == 1)
 	    { // To deal with cursor upon a single character.
 		XGlyphInfo extents;
 		int width_to_draw;
@@ -3199,11 +3201,12 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 			//Width2Pixel(1),
 			Height2Pixel(1));
 	    }
-	    else
+	    else*/
 		XftDrawRect (PVTS(r, page)->xftvt, &(r->xftColors[back]),
 			x, y,
 			//extents.xOff, 
-			Width2Pixel(len * 2),
+			//Width2Pixel(len * 2),
+			Width2Pixel(cols),
 			Height2Pixel(1));
 	    //extents.yOff);
 
@@ -3462,6 +3465,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
     int16_t	col, row,   /* column/row we're processing */
 		ocrow,	    /* old cursor row */
 		len, wlen;  /* text length screen/buffer */
+    int16_t	cols;
     int		i,	    /* tmp */
 		row_offset; /* basic offset in screen structure */
 #ifndef NO_CURSORCOLOR
@@ -3848,8 +3852,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 
 	    t = dtp[col];
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
-	    if (stp[col] == 0)
-		continue;
+	    /*if (stp[col] == 0)
+		continue;*/
 	    if (!clear_next &&
 		(is_same_char || t == 0 || t == ' '))
 		/* screen cleared elsewhere */
@@ -3859,7 +3863,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		/* previous char caused change here */
 		clear_next = 0;
-		dtp[col] = 0;
+		dtp[col] = ' '; //0;
 
 		/* don't cascade into next char */
 		if (is_same_char)
@@ -3968,7 +3972,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    //XftFont* font;
 	    //XGlyphInfo extents;
 
-	    if (stp[col] == 0)
+	    if (stp[col] == 0 /*&& dtp[col] != 0*/)
 		continue;
 	    /* screen rendition (target rendtion) */
 	    rend = srp[col];
@@ -3978,7 +3982,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	     */
 	    if (
 		 /* Must match characters to skip. */
-		 stp[col] == dtp[col] &&
+		 (stp[col] == dtp[col] && stp[col] != ' ' /*&& stp[col] != 0*/) &&
 		 /* Either rendition the same or   */
 		 (
 		   rend == drp[col] ||
@@ -4013,7 +4017,11 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    len = 0;
 	    //if (stp[col] != 0)
 	    //{
+	    //if (stp[col] != 0)
 	    buffer[len++] = dtp[col] = stp[col];
+	    /*else
+		buffer[len++] = dtp[col] = ' ';*/
+
 	    drp[col] = rend;
 
 	    //font = r->TermWin.xftfont;
@@ -4134,6 +4142,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #endif
 #endif
 	    {
+		cols = 1;
 		if (/*!fprop ||*/ !(drp[col] & RS_notStandardSize))
 		{
 		    int echars;
@@ -4153,17 +4162,23 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			 * not need to be drawn. When echars get's too high,
 			 * then we should break out.
 			 */
+			/*if (stp[col] == 0)
+			{
+			    dtp[col] = stp[col];
+			    drp[col] = srp[col];
+			    col++;
+			    if (i == 0)
+				cols++;
+			    break;
+			}*/
 			if (rend != srp[col])
 			    /* Different attributes. */
 			    break;
-			if (stp[col] == 0)
-			{
-			    col++;
-			    break;
-			}
+
+			cols++;
 			buffer[len++] = stp[col];
 
-			if ( (stp[col] != dtp[col]) || (srp[col] != drp[col]) )
+			if ((stp[col] != dtp[col]) || (srp[col] != drp[col]) )
 			{
 			    /* This position needed to be refreshed anyway */
 			    /* if (must_clear && (i++ > (len / 2))) break; */
@@ -4190,10 +4205,23 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		    }	/* for */
 		    col--;	/* went one too far.  move back */
 		    len -= i;	/* dump any matching trailing chars */
+		    /*if (dtp[col + 1] == 0 && i == 0)
+			cols++;
+		    else*/
+			cols -= i;
 
 		    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Drawing %d(%d) chars: %.*s\n", len, echars-i, (len > 55) ? 55 : len, buffer));
 		} /* if (!fprop) */
-		wlen = len;
+		else if (stp[col + 1] == 0)
+		{
+		    cols = 2;
+		    col++;
+		    dtp[col] = 0;
+		    //drp[col] = stp[col];
+		    /*if (dtp[col + 1] == 0)
+			cols++;*/
+		}
+		//wlen = len;
 	    }
 	    buffer[len] = '\0';
 
@@ -4502,22 +4530,22 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    if (back == Color_bg && must_clear)
 	    {
 		CLEAR_CHARS( r, page, already_cleared,
-			xpixel, ypixelc, len);
-		//for (i = 0; i < len; i++)
+			xpixel, ypixelc, cols); //len);
+		for (i = 0; i < len; i++)
 		    /* don't draw empty strings */
-		    //if (buffer[i] != ' ')
+		    if (buffer[i] != ' ')
 		    {
 			rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "CL Drawing '%.60s' (%d)\n", buffer, len));
 
 			rxvt_scr_draw_string (r, page, xpixel, ypixelc,
-				buffer, len, drawfunc,
+				buffer, len, cols, drawfunc,
 				fore, back, rend,
 				((refresh_type & CLIPPED_REFRESH) ?
 					r->h->refreshRegion : None ));
 			break;
 		    }
 	    }
-	    else //if (fprop || fontdiff)
+	    else if (fprop || fontdiff)
 	    {
 		/* single glyph writing */
 		unsigned long   pixel;
@@ -4526,7 +4554,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		gcvalue.foreground = gcvalue.background;
 		XChangeGC(r->Xdisplay, r->TermWin.gc, GCForeground, &gcvalue);
 		rxvt_fill_rectangle (r, page, xpixel, ypixelc,
-		    (unsigned int) Width2Pixel(len),
+		    //(unsigned int) Width2Pixel(len),
+		    (unsigned int) Width2Pixel(cols),
 		    (unsigned int) (Height2Pixel(1)
 		    /* - r->TermWin.lineSpace */));
 		gcvalue.foreground = pixel;
@@ -4534,22 +4563,20 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "PF Drawing '%.60s' (%d)\n", buffer, len));
 		rxvt_scr_draw_string (r, page,
-			xpixel, ypixelc, buffer, wlen, drawfunc,
+			xpixel, ypixelc, buffer, len, cols, drawfunc,
 			fore, back, rend,
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));
 	    }
-#if 0
 	    else
 	    {
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "NC Drawing '%.60s' (%d)\n", buffer, len));
 		rxvt_scr_draw_string (r, page,
-			xpixel, ypixelc, buffer, wlen, XFT_DRAW_IMAGE_STRING_8, //image_drawfunc,
+			xpixel, ypixelc, buffer, len, cols, XFT_DRAW_IMAGE_STRING_8, //image_drawfunc,
 			fore, back, rend,
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));
 	    }
-#endif
 
 #ifndef NO_BOLDOVERSTRIKE
 # ifdef NO_BOLDOVERSTRIKE_MULTI
@@ -4563,7 +4590,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		 */
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Overstriking %s\n", buffer ));
 		rxvt_scr_draw_string (r, page,
-			xpixel + 1, ypixelc, buffer, wlen, drawfunc,
+			xpixel + 1, ypixelc, buffer, len, cols, drawfunc,
 			fore, back, rend,
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));
