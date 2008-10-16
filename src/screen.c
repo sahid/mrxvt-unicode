@@ -235,6 +235,7 @@ void
 rxvt_blank_screen_mem(rxvt_t* r, int page, text_t **tp, rend_t **rp,
 	unsigned int row, rend_t efs)
 {
+    rxvt_dbgmsg ((DBG_VERBOSE, DBG_SCREEN, "rxvt_blank_screen_mem (r, page: %d, text_pointer, rend_pointer)\n", page));
     int col;
     int		 width = r->TermWin.ncol;
     rend_t	 *er;
@@ -300,20 +301,49 @@ rxvt_scr_alloc (rxvt_t* r, int page)
     ** are NULL
     */
     PVTS(r, page)->buf_text = rxvt_calloc(total_rows, sizeof(text_t*));
+    //MEMSET(PVTS(r, page)->buf_text, 0, total_rows * sizeof (text_t*));
     PVTS(r, page)->buf_rend = rxvt_calloc(total_rows, sizeof(rend_t*));
+    //MEMSET(PVTS(r, page)->buf_rend, 0, total_rows * sizeof (rend_t*));
 
     PVTS(r, page)->drawn_text = rxvt_calloc(nrow, sizeof(text_t*));
+    //MEMSET(PVTS(r, page)->drawn_text, 0, nrow * sizeof (text_t*));
     PVTS(r, page)->drawn_rend = rxvt_calloc(nrow, sizeof(rend_t*));
+    //MEMSET(PVTS(r, page)->drawn_rend, 0, nrow * sizeof (rend_t*));
 
     PSCR(r, page).text = rxvt_calloc(total_rows, sizeof(text_t*));
+    //MEMSET(PSCR(r, page).text, 0, total_rows * sizeof (text_t*));
     PSCR(r, page).tlen = rxvt_calloc(total_rows, sizeof(int16_t));
+    //MEMSET(PSCR(r, page).tlen, 0, total_rows * sizeof (int16_t));
     PSCR(r, page).rend = rxvt_calloc(total_rows, sizeof(rend_t*));
+    //MEMSET(PSCR(r, page).rend, 0, total_rows * sizeof (rend_t*));
 
 #if NSCREENS
     PVTS(r, page)->swap.text = rxvt_calloc(nrow, sizeof(text_t*));
+    //MEMSET(PVTS(r, page)->swap.text, 0, nrow * sizeof (text_t*));
     PVTS(r, page)->swap.tlen = rxvt_calloc(nrow, sizeof(int16_t));
+    //MEMSET(PVTS(r, page)->swap.tlen, 0, nrow * sizeof (int16_t));
     PVTS(r, page)->swap.rend = rxvt_calloc(nrow, sizeof(rend_t*));
+    //MEMSET(PVTS(r, page)->swap.rend, 0, nrow * sizeof (rend_t*));
 #endif
+
+    for (p = 0; p < total_rows; p++)
+    {
+    	PVTS(r, page)->buf_text[p] = NULL;
+	PVTS(r, page)->buf_rend[p] = NULL;
+	PSCR(r, page).text[p] = NULL;
+	PSCR(r, page).tlen[p] = 0;
+	PSCR(r, page).rend[p] = NULL;
+    }
+    for (p = 0; p < nrow; p++)
+    {
+    	PVTS(r, page)->drawn_text[p] = NULL;
+	PVTS(r, page)->drawn_rend[p] = NULL;
+#if NSCREENS
+	PVTS(r, page)->swap.text[p] = NULL;
+	PVTS(r, page)->swap.tlen[p] = 0;
+	PVTS(r, page)->swap.rend[p] = NULL;
+#endif
+    }
 
     for (p = 0; p < nrow; p++)
     {
@@ -1131,7 +1161,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	}
     }
 
-    assert(CURCOL < last_col);
+    assert(CURCOL < last_col + 1);
     assert(CURROW < r->TermWin.nrow);
 
 #if 0 /*{{{ Possibly incorrection assertion */
@@ -1305,6 +1335,24 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    clearsel = 1;
 	}
 
+	if (PSCR(r, page).flags & Screen_WrapNext)
+	{
+	    //PSCR(r, page).tlen[row] = -1;
+	    PSCR(r, page).tlen[row] = 0;
+	    if (CURROW == PSCR(r, page).bscroll)
+	    {
+		rxvt_scroll_text(r, page, PSCR(r, page).tscroll,
+			PSCR(r, page).bscroll, 1, 0);
+		adjust_view_start( r, page, 1 );
+	    }
+	    else if (CURROW < (r->TermWin.nrow - 1))
+		row = (++CURROW) + SVLINES;
+	    stp = PSCR(r, page).text[row];  /* _must_ refresh */
+	    srp = PSCR(r, page).rend[row];  /* _must_ refresh */
+	    CURCOL = 0;
+	    PSCR(r, page).flags &= ~Screen_WrapNext;
+	}
+
 	stp[CURCOL] = c;
 	srp[CURCOL++] = PVTS(r, page)->rstyle;
 
@@ -1389,24 +1437,6 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    //PSCR(r, page).tlen[row] = -1;
 	    if (PSCR(r, page).flags & Screen_Autowrap)
 		PSCR(r, page).flags |= Screen_WrapNext;
-	}
-
-	if (PSCR(r, page).flags & Screen_WrapNext)
-	{
-	    //PSCR(r, page).tlen[row] = -1;
-	    PSCR(r, page).tlen[row] = 0;
-	    if (CURROW == PSCR(r, page).bscroll)
-	    {
-		rxvt_scroll_text(r, page, PSCR(r, page).tscroll,
-			PSCR(r, page).bscroll, 1, 0);
-		adjust_view_start( r, page, 1 );
-	    }
-	    else if (CURROW < (r->TermWin.nrow - 1))
-		row = (++CURROW) + SVLINES;
-	    stp = PSCR(r, page).text[row];  /* _must_ refresh */
-	    srp = PSCR(r, page).rend[row];  /* _must_ refresh */
-	    CURCOL = 0;
-	    PSCR(r, page).flags &= ~Screen_WrapNext;
 	}
 
 	if (PSCR(r, page).flags & Screen_Insert)
@@ -3502,7 +3532,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	return;
     }
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_refresh %d ()\n", page));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_refresh (r, page: %d, refresh_type: %x)\n", page, refresh_type));
 
     /*
     ** A: set up vars
@@ -3830,7 +3860,6 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 			ypixelc;
 	unsigned long	gcmask;	 /* Graphics Context mask */
 
-
 	stp = PSCR(r, page).text[row + row_offset];
 	srp = PSCR(r, page).rend[row + row_offset];
 	dtp = PVTS(r, page)->drawn_text[row];
@@ -3849,6 +3878,8 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	{
 	    unsigned char   is_font_char, is_same_char;
 	    text_t	    t;
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_refresh (row: %d col: %d)\n", row, col));
+
 
 	    t = dtp[col];
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
@@ -4212,7 +4243,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 
 		    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Drawing %d(%d) chars: %.*s\n", len, echars-i, (len > 55) ? 55 : len, buffer));
 		} /* if (!fprop) */
-		else if (stp[col + 1] == 0)
+		else if (col < r->TermWin.ncol - 1 && stp[col + 1] == 0)
 		{
 		    cols = 2;
 		    col++;

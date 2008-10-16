@@ -1908,7 +1908,7 @@ xftFreeUnusedFont (rxvt_t *r, XftFont *f)
     {
 	int i = 0;
 	char used_font = 0;
-	for (; i++ < r->TermWin.numxftfont;)
+	for (; i < r->TermWin.numxftfont; i++)
 	{
 	    if (f == r->TermWin.xftfont[i])
 	    {
@@ -1917,7 +1917,7 @@ xftFreeUnusedFont (rxvt_t *r, XftFont *f)
 	    }
 	}
 # ifndef NO_BOLDFONT
-	for (i = 0; i++ < r->TermWin.numxftbfont;)
+	for (i = 0; i < r->TermWin.numxftbfont; i++)
 	{
 	    if (f == r->TermWin.xftbfont[i])
 	    {
@@ -2442,15 +2442,25 @@ void
 rxvt_set_term_title (rxvt_t* r, const unsigned char *str)
 {
 #ifdef SMART_WINDOW_TITLE
-    XTextProperty   prop;
+    //XTextProperty   prop;
+    char **window_name_return = malloc (sizeof (char*));;
+    if (XFetchName(r->Xdisplay, r->TermWin.parent, window_name_return) == 0)
+    	SET_NULL (*window_name_return);
 
-    if (XGetWMName (r->Xdisplay, r->TermWin.parent, &prop) == 0)
-	SET_NULL(prop.value);
-    if (IS_NULL(prop.value) || STRCMP(prop.value, str))
+    /*if (XGetWMName (r->Xdisplay, r->TermWin.parent, &prop) == 0)
+	SET_NULL(prop.value);*/
+    //if (IS_NULL(prop.value) || STRCMP(prop.value, str))
+    if (IS_NULL(*window_name_return) || STRCMP(*window_name_return, str))
 #endif
     {
 	rxvt_set_win_title (r, r->TermWin.parent, (char*) str);
     }
+#ifdef SMART_WINDOW_TITLE
+    if (NOT_NULL (*window_name_return))
+	    XFree (*window_name_return);
+
+    rxvt_free (window_name_return);
+#endif
 }
 
 
@@ -2458,12 +2468,16 @@ rxvt_set_term_title (rxvt_t* r, const unsigned char *str)
 void
 rxvt_set_icon_name (rxvt_t* r, const text_t *str)
 {
-    XTextProperty   prop;
+    //XTextProperty   prop;
 
 #ifdef SMART_WINDOW_TITLE
-    if (XGetWMIconName(r->Xdisplay, r->TermWin.parent, &prop) == 0)
-	SET_NULL(prop.value);
-    if (IS_NULL(prop.value) || STRCMP(prop.value, str))
+    char **icon_name_return = malloc (sizeof (char*));
+    if (XGetIconName(r->Xdisplay, r->TermWin.parent, icon_name_return) == 0)
+	SET_NULL(icon_name_return);
+    /*if (XGetWMIconName(r->Xdisplay, r->TermWin.parent, &prop) == 0)
+	SET_NULL(prop.value);*/
+    //if (IS_NULL(prop.value) || STRCMP(prop.value, str))
+    if (IS_NULL(*icon_name_return) || STRCMP(*icon_name_return, str))
 #endif
     {
 	XChangeProperty (r->Xdisplay, r->TermWin.parent,
@@ -2474,6 +2488,12 @@ rxvt_set_icon_name (rxvt_t* r, const text_t *str)
 	    r->TermWin.parent, (char*) str);
 #endif
     }
+#ifdef SMART_WINDOW_TITLE
+    if (NOT_NULL (*icon_name_return))
+	    XFree (*icon_name_return);
+
+    rxvt_free (icon_name_return);	
+#endif
 }
 
 
