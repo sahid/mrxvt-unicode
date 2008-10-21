@@ -664,6 +664,7 @@ typedef struct
     /* moved from tab_t */
     short		tab_width;	/* tab width */
     text_t UNTAINTED *	tab_title;  	/* tab title */
+    unsigned int	tab_title_length; /* Number of character in the tab title */
 
     char	    *title_format;	/* Format to be used to display the tab
 					   title */

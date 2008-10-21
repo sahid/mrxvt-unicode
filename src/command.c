@@ -1107,13 +1107,13 @@ rxvt_process_keypress (rxvt_t* r, XKeyEvent *ev)
 	    if (r->h->greek_mode)
 	    {
 		rxvt_xterm_seq(r, ATAB(r), XTerm_title,
-		    (greek_getmode() == GREEK_ELOT928 ?
+		    (const text_t *) (greek_getmode() == GREEK_ELOT928 ?
 		    "[Greek: iso]" : "[Greek: ibm]"), CHAR_ST);
 		greek_reset();
 	    }
 	    else
 		rxvt_xterm_seq(r, ATAB(r), XTerm_title,
-		    APL_NAME "-" VERSION, CHAR_ST);
+		    (const text_t *) APL_NAME "-" VERSION, CHAR_ST);
 	    return;
 	}
 #endif	/* GREEK_SUPPORT */
@@ -6167,6 +6167,7 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 	    for (buf = (text_t *)str; buf && *buf;)
 	    {
 		if (IS_NULL(name = STRCHR(buf, ';')))
+		//if (buf[0] == ';')
 		    break;
 		*name++ = '\0';
 		color = atoi(buf);

@@ -221,7 +221,7 @@ int              rxvt_control_tty                 __PROTO((int fd_tty, const cha
 /* Begin prototypes of screen.c */
 void
 rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
-	int x, int y, text_t* str, int len, int (*draw_string)());
+	int x, int y, text_t* str, int len, int cols, int drawfunc); //(*draw_string)());
 #ifdef XFT_SUPPORT
 void
 rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,

@@ -459,7 +459,7 @@ draw_string (rxvt_t* r, Region clipRegion,
 	{
 	    XSetFont (r->Xdisplay, r->tabBar.gc, r->TermWin.font->fid);
 	    rxvt_draw_string_x11 (r, r->tabBar.win, r->tabBar.gc,
-		    clipRegion, x, y, str, len, XDrawString);
+		    clipRegion, x, y, str, len, len, XDrawString); // TODO
 	    return Width2Pixel (len);
 	}
     }
@@ -478,6 +478,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 {
     Region	clipRegion;
     text_t	str[MAX_DISPLAY_TAB_TXT + 1];
+    unsigned int title_len = min (PVTS(r,tnum)->tab_title, r->TermWin.maxTabWidth);
 
 #if 0
 #ifdef MULTICHAR_SET
@@ -554,19 +555,20 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 	if( ISSET_OPTION( r, Opt3_chopEnd ) )
 	{
 	    //STRNCPY( str, PVTS(r,tnum)->tab_title , r->TermWin.maxTabWidth );
-	    MEMCPY (str, PVTS(r,tnum)->tab_title , sizeof (text_t) * 5); //r->TermWin.maxTabWidth);
+	    MEMCPY (str, PVTS(r,tnum)->tab_title , sizeof (text_t) * title_len); //r->TermWin.maxTabWidth);
 	    //str[r->TermWin.maxTabWidth] = '\0';
-	    str[2] = '\0';
+	    str[title_len] = '\0';
 	}
 	else
 	{
-	    int title_len = STRLEN(PVTS(r,tnum)->tab_title);
-	    int excess = max(title_len - r->TermWin.maxTabWidth, 0);
+	    //title_len = STRLEN(PVTS(r,tnum)->tab_title);
+	    //int excess = max(title_len - r->TermWin.maxTabWidth, 0);
+	    int excess = max(r->TermWin.maxTabWidth - title_len, 0);
 
 	    //STRNCPY( str, PVTS(r,tnum)->tab_title + excess,
 		//     r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
 	    MEMCPY (str, PVTS(r,tnum)->tab_title + excess,
-		     5 * sizeof (text_t)); //r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
+		     title_len * sizeof (text_t)); //r->TermWin.maxTabWidth + 1 );  /* + 1 ensures we get \0 */
 	}
     }
 
@@ -644,7 +646,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 #endif	/* MULTICHAR_SET */
 #endif
     draw_string (r, clipRegion,
-	    x, y, str, 5 /*STRLEN(str)*/, False, tnum == ATAB(r));
+	    x, y, str, title_len /*STRLEN(str)*/, False, tnum == ATAB(r));
 
     /*
      * Restore clipping of the xftdrawable / gc.
@@ -1662,6 +1664,7 @@ rxvt_tabbar_set_title (rxvt_t* r, short page, const text_t TAINTED * str)
     {
 	rxvt_free (PVTS(r, page)->tab_title);
 	PVTS(r, page)->tab_title = n_title;
+	PVTS(r, page)->tab_title_length = str_len;
 
 	/* Compute the new width of the tab */
 	PVTS(r, page)->tab_width = rxvt_tab_width (r, n_title);

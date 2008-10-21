@@ -350,7 +350,7 @@ rxvt_scr_alloc (rxvt_t* r, int page)
 	q = p + SVLINES;
 	rxvt_blank_screen_mem (r, page, PSCR(r, page).text,
 	    PSCR(r, page).rend, q, DEFAULT_RSTYLE);
-	PSCR(r, page).tlen[q] = 0;
+	//PSCR(r, page).tlen[q] = 0;
 #if NSCREENS
 	rxvt_blank_screen_mem (r, page, PVTS(r, page)->swap.text,
 	    PVTS(r, page)->swap.rend, p, DEFAULT_RSTYLE);
@@ -1119,7 +1119,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     unsigned char   checksel, clearsel;
 
     text_t c;
-    rend_t font_with_c;
+    rend_t font_with_c = 0;
     FT_Face	face;
 
     int		 i, row, last_col;
@@ -1356,6 +1356,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL++] = PVTS(r, page)->rstyle;
 
+	if (r->TermWin.numxftfont > 1)
 	{
 	    //printf ("numxftfont = %d\n", r->TermWin.numxftfont);
 	    for (font_with_c = 0; font_with_c < r->TermWin.numxftfont; font_with_c++)
@@ -1576,7 +1577,7 @@ rxvt_scr_tab(rxvt_t* r, int page, int count)
      * CURROW (if it was negative). If we're adding lines to the screen
      * structure, then CURROW is allowed to be negative.
      */
-    PSCR(r, page).tlen[CURROW] += x - CURCOL;
+    //PSCR(r, page).tlen[CURROW] += x - CURCOL;
     CURCOL = x;
 #endif
 }
@@ -2934,7 +2935,7 @@ rxvt_fill_rectangle (rxvt_t* r, int page, int x, int y, unsigned int w, unsigned
  */
 
 
-//#if 0
+#if 0
 #define X11_DRAW_STRING_8	    (1)
 #define X11_DRAW_STRING_16	    (2)
 #define X11_DRAW_IMAGE_STRING_8	    (3)
@@ -2947,7 +2948,7 @@ rxvt_fill_rectangle (rxvt_t* r, int page, int x, int y, unsigned int w, unsigned
 #define XFT_DRAW_IMAGE_STRING_16    (10)
 #define XFT_DRAW_IMAGE_STRING_32    (11)
 #define XFT_DRAW_IMAGE_STRING_UTF8  (12)
-//#endif
+#endif
 #define X11_DRAW_STRING		    (1)
 #define X11_DRAW_IMAGE_STRING	    (3)
 #define XFT_DRAW_STRING		    (5)
@@ -3048,7 +3049,7 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 /* EXTPROTO */
 void
 rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
-	int x, int y, text_t* str, int len, int (*draw_string)())
+	int x, int y, text_t* str, int len, int cols, int drawfunc) //(*draw_string)())
 {
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_draw_string_x11 (r, win, gc, region, x: %d, y: %d, str, len: %d, ...)", x, y, len));
 # ifdef TEXT_SHADOW
@@ -3089,12 +3090,14 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	 */
 	/*if( draw_string == XDrawImageString ||
 		draw_string == XDrawImageString16)*/
+	if (drawfunc == XFT_DRAW_IMAGE_STRING || drawfunc == X11_DRAW_IMAGE_STRING)
 	{
 	    XSetForeground( r->Xdisplay, gc, gcvalue.background);
 	    XSetFillStyle( r->Xdisplay, gc, FillSolid);
 	    XFillRectangle( r->Xdisplay, win, gc,
 		    x, y - font->ascent,
-		    Width2Pixel (len * 2), // TODO
+		    //Width2Pixel (len * 2),
+		    Width2Pixel (cols),
 		    //escapement,
 		    font->ascent + font->descent);
 		    //charstruct.width, font->ascent + font->descent);
@@ -3180,8 +3183,9 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 
     switch (drawfunc)
     {
-	case	XFT_DRAW_IMAGE_STRING_8:
-	case	XFT_DRAW_IMAGE_STRING_16:
+	//case	XFT_DRAW_IMAGE_STRING_8:
+	case	XFT_DRAW_IMAGE_STRING:
+	//case	XFT_DRAW_IMAGE_STRING_16:
 	    fillback = 1;
 	    break;
     }
@@ -3393,6 +3397,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 #endif	/* XFT_SUPPORT */
     {
 	int	(*draw_string) ();
+#if 0
 	switch (drawfunc)
 	{
 	    case    X11_DRAW_STRING_8:
@@ -3421,6 +3426,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	    default:
 		draw_string = NULL; break;
 	}
+#endif
 
 	/* We use TermWin.font->ascent here */
 	y += r->TermWin.font->ascent;
@@ -3428,7 +3434,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
 	/* Now draw the string */
 	//if (draw_string)
 	    rxvt_draw_string_x11 (r, PVTS(r, page)->vt, r->TermWin.gc,
-		    refreshRegion, x, y, str, len, draw_string);
+		    refreshRegion, x, y, str, len, cols, drawfunc); //draw_string);
     }
 }
 
@@ -3540,14 +3546,18 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 #ifdef XFT_SUPPORT
     if (ISSET_OPTION(r, Opt_xft) && PVTS(r, page)->xftvt)
     {
-	drawfunc = XFT_DRAW_STRING_8;
-	image_drawfunc = XFT_DRAW_IMAGE_STRING_8;
+	//drawfunc = XFT_DRAW_STRING_8;
+	drawfunc = XFT_DRAW_STRING;
+	//image_drawfunc = XFT_DRAW_IMAGE_STRING_8;
+	image_drawfunc = XFT_DRAW_IMAGE_STRING;
     }
     else
 #endif
     {
-	drawfunc = X11_DRAW_STRING_8;
-	image_drawfunc = X11_DRAW_IMAGE_STRING_8;
+	//drawfunc = X11_DRAW_STRING_8;
+	drawfunc = X11_DRAW_STRING;
+	//image_drawfunc = X11_DRAW_IMAGE_STRING_8;
+	image_drawfunc = X11_DRAW_IMAGE_STRING;
     }
 
     clearfirst = clearlast = must_clear = wbyte = 0;
@@ -4603,7 +4613,7 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	    {
 		rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "NC Drawing '%.60s' (%d)\n", buffer, len));
 		rxvt_scr_draw_string (r, page,
-			xpixel, ypixelc, buffer, len, cols, XFT_DRAW_IMAGE_STRING_8, //image_drawfunc,
+			xpixel, ypixelc, buffer, len, cols, image_drawfunc, //XFT_DRAW_IMAGE_STRING_8, //image_drawfunc,
 			fore, back, rend,
 			((refresh_type & CLIPPED_REFRESH) ?
 				r->h->refreshRegion : None ));

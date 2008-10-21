@@ -2861,6 +2861,7 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
     SET_NULL(PVTS(r, page)->xftvt);
 #endif
     SET_NULL(PVTS(r, page)->tab_title);
+    PVTS(r, page)->tab_title_length = 0;
 
     /*
      * Set the tab title format, and window title format. getProfileOption
