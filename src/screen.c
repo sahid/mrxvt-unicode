@@ -3057,8 +3057,8 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 {
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_draw_string_x11 (r, win, gc, region, x: %d, y: %d, str, len: %d, ...)", x, y, len));
 # ifdef TEXT_SHADOW
-    //while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
-# endif	/* TEXT_SHADOW */
+    while (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
+//# endif	/* TEXT_SHADOW */
     {
 	int escapement;
 	int	sx, sy;
@@ -3070,7 +3070,10 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	GContext    gid = XGContextFromGC( gc );
 	XFontStruct *font = XQueryFont( r->Xdisplay, gid);
 
-	//if( font == NULL ) break;
+//#ifdef TEXT_SHADOW
+	if( font == NULL )
+	    break;
+//#endif
 	rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "handling text shadow for %s (%d)\n", str, len));
 
 	/*
@@ -3111,7 +3114,7 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 	    else draw_string = XDrawString16;*/
 	}
 
-# ifdef TEXT_SHADOW
+//# ifdef TEXT_SHADOW
 	/*
 	 * Restrict output to the above bounding box.
 	 */
@@ -3133,7 +3136,7 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 		XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x+sx, y+sy, (wchar_t *) str, len);
 	}
 
-#endif
+//#endif
 	/*
 	 * Restore old GC values.
 	 */
@@ -3141,21 +3144,26 @@ rxvt_draw_string_x11 (rxvt_t* r, Window win, GC gc, Region refreshRegion,
 		GCForeground | GCBackground | GCFillStyle,
 		&gcvalue);
 
-# ifdef TEXT_SHADOW
+//# ifdef TEXT_SHADOW
 	/*
 	 * Unclip drawing for remaining drawing.
 	 */
 	rxvt_free_clipping (r, NULL, gc, refreshRegion);
-#endif
+//#endif
 
 	XFreeFontInfo( NULL, font, 1);
-	//break;
+//# ifdef TEXT_SHADOW
+	break;
+//#endif	/* TEXT_SHADOW */
     }
-//# endif	/* TEXT_SHADOW */
+#endif	/* TEXT_SHADOW */
 
     rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "output entire string: %X\n", *str));
     //draw_string (r->Xdisplay, win, gc, x, y, str, len);
-    XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x, y, (wchar_t *) str, len);
+    if (drawfunc == XFT_DRAW_IMAGE_STRING || drawfunc == X11_DRAW_IMAGE_STRING)
+	XwcDrawImageString (r->Xdisplay, win, r->TermWin.fontset, gc, x, y, (wchar_t *) str, len);
+    else
+	XwcDrawString (r->Xdisplay, win, r->TermWin.fontset, gc, x, y, (wchar_t *) str, len);
 }
 
 
@@ -3400,7 +3408,7 @@ rxvt_scr_draw_string (rxvt_t* r, int page,
     else
 #endif	/* XFT_SUPPORT */
     {
-	int	(*draw_string) ();
+	//int	(*draw_string) ();
 #if 0
 	switch (drawfunc)
 	{
@@ -3892,8 +3900,6 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 	{
 	    unsigned char   is_font_char, is_same_char;
 	    text_t	    t;
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "rxvt_scr_refresh (row: %d col: %d)\n", row, col));
-
 
 	    t = dtp[col];
 	    is_same_char = (t == stp[col] && drp[col] == srp[col]);
