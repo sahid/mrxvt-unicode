@@ -459,7 +459,7 @@ draw_string (rxvt_t* r, Region clipRegion,
 	{
 	    XSetFont (r->Xdisplay, r->tabBar.gc, r->TermWin.font->fid);
 	    rxvt_draw_string_x11 (r, r->tabBar.win, r->tabBar.gc,
-		    clipRegion, x, y, str, len, len, XDrawString); // TODO
+		    clipRegion, x, y, str, len, len, 1); //X11_DRAW_STRING); // TODO
 	    return Width2Pixel (len);
 	}
     }
@@ -478,7 +478,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 {
     Region	clipRegion;
     text_t	str[MAX_DISPLAY_TAB_TXT + 1];
-    unsigned int title_len = min (PVTS(r,tnum)->tab_title, r->TermWin.maxTabWidth);
+    unsigned int title_len = min (PVTS(r,tnum)->tab_title_length, r->TermWin.maxTabWidth);
 
 #if 0
 #ifdef MULTICHAR_SET
