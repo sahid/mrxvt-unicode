@@ -14,7 +14,7 @@
  * Copyright (c) 2005        Burgers A.R. <burgers@ecn.nl>
  * Copyright (c) 2004-2006   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
- * Copyright (C) 2008		  Jehan Hysseo <hysseo@users.sourceforge.net>
+ * Copyright (C) 2008        Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1946,6 +1946,7 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
 {
     XftPattern**    xp;
     XftFont	    **xf, *pxf, *Pxf;
+    int numxf;
 #if 0
 # ifdef MULTICHAR_SET
     XftPattern*	mxp;
@@ -2006,6 +2007,7 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
     */
     xp = r->TermWin.xftpattern;	SET_NULL(r->TermWin.xftpattern);
     xf = r->TermWin.xftfont;	SET_NULL(r->TermWin.xftfont);
+    numxf = r->TermWin.numxftfont;
     pxf = r->TermWin.xftpfont;	SET_NULL(r->TermWin.xftpfont);
     Pxf = r->TermWin.xftPfont;	SET_NULL(r->TermWin.xftPfont);
 #if 0
@@ -2021,6 +2023,7 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
 	r->TermWin.xftfont	= xf;
 	r->TermWin.xftpfont	= pxf;
 	r->TermWin.xftPfont	= Pxf;
+	r->TermWin.numxftfont = numxf;
 #if 0
 # ifdef MULTICHAR_SET
 	r->TermWin.xftmpattern	= mxp;
@@ -2031,11 +2034,14 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
     }
 
     /* The old Xft font (if differnt) can now be freed */
-    xftFreeUnusedFont (r, xf); // TODO
-    if (pxf != xf)
-	xftFreeUnusedFont (r, pxf );
-    if (Pxf != xf && Pxf != pxf)
-	xftFreeUnusedFont (r, Pxf);
+    for (; numxf--; xf++)
+    {
+	xftFreeUnusedFont (r, *xf); // TODO
+	if (pxf != *xf)
+	    xftFreeUnusedFont (r, pxf);
+	if (Pxf != *xf && Pxf != pxf)
+	    xftFreeUnusedFont (r, Pxf);
+    }
 
 #if 0
 #ifdef MULTICHAR_SET

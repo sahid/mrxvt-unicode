@@ -20,7 +20,7 @@
  *				<johann@myrkraverk.com>
  * Copyright (c) 2004-2006   Jingmin Zhou <jimmyzhou@users.sourceforge.net>
  * Copyright (c) 2005-2006   Gautam Iyer <gi1242@users.sourceforge.net>
- * Copyright (C) 2008	     Jehan Hysseo <hysseo@users.sourceforge.net>
+ * Copyright (C) 2008        Jehan Hysseo <hysseo@users.sourceforge.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
