@@ -123,6 +123,11 @@ typedef struct
 //#ifdef USE_XIM
     XFontSet	    fontset;
 //#endif
+#  ifdef HAVE_ICONV_H
+    iconv_t	    global_state;
+#else
+    mbstate_t*	    global_state; // Multi-bite Shift state in C99 standard.
+#endif
 #ifdef XFT_SUPPORT
     XftPattern	    **xftpattern;
     XftFont	    **xftfont, *xftpfont, *xftPfont;

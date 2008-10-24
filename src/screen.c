@@ -1119,8 +1119,10 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
     unsigned char   checksel, clearsel;
 
     text_t c;
+#ifdef XFT_SUPPORT
     rend_t font_with_c = 0;
     FT_Face	face;
+#endif
 
     int		 i, row, last_col;
     text_t	 *stp;
@@ -1356,6 +1358,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	stp[CURCOL] = c;
 	srp[CURCOL++] = PVTS(r, page)->rstyle;
 
+#ifdef XFT_SUPPORT
 	if (r->TermWin.numxftfont > 1)
 	{
 	    //printf ("numxftfont = %d\n", r->TermWin.numxftfont);
@@ -1381,6 +1384,7 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 	    //srp[CURCOL - 1] |= (0 << 24) & RS_fontID;
 
 	}
+#endif
 
 #ifdef XFT_SUPPORT
 	if (!r->TermWin.xftmono)

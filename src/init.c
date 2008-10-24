@@ -669,6 +669,16 @@ rxvt_init_vars(rxvt_t *r)
     SET_NULL(r->TermWin.bfont);
 #endif
 
+#ifdef HAVE_ICONV_H
+    // after being used
+    // this must always be set to the initial state by calling
+    // iconv (global_state, NULL, NULL, NULL, NULL);
+    r->TermWin.global_state = iconv_open ("WCHAR_T", "");
+#else
+    mbstate_t* mbst = r->TermWin.global_state = rxvt_malloc (sizeof (mbstate_t));
+    memset (mbst, 0, sizeof(mbst));
+#endif
+
 #ifdef XFT_SUPPORT
     SET_NULL(r->TermWin.xftpattern);
     SET_NULL(r->TermWin.xftfont);

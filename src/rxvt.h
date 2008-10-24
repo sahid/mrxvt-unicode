@@ -882,6 +882,7 @@ enum
 # define IS_MULTI2(R)	    (((R) & RS_multiMask) == RS_multi2)
 #else
 #define RS_notStandardSize  0x80000000u
+#define RS_fontID	    0x7F000000u
 # define RS_multiMask	    (0)
 # define IS_MULTI1(r)	    (0)
 # define IS_MULTI2(r)	    (0)

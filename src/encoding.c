@@ -141,6 +141,7 @@ struct NFONT_LIST {
 
 static struct NFONT_LIST nfont_list[] = {
     {ENC_NOENC,	     {NFONT_LIST_NULL}},
+#if 0
 //#ifdef MULTICHAR_SET
     {ENC_SJIS,	     {NFONT_LIST_EUCJ}},
     {ENC_EUCJ,	     {NFONT_LIST_EUCJ}},
@@ -150,6 +151,7 @@ static struct NFONT_LIST nfont_list[] = {
     {ENC_BIG5,	     {NFONT_LIST_BIG5}},
     {ENC_EUCKR,	     {NFONT_LIST_EUCKR}},
 //#endif
+#endif
     {ENC_KOI8R,	     {NFONT_LIST_KOI8R}},
     {ENC_KOI8U,	     {NFONT_LIST_KOI8U}},
     {ENC_ISO8859_1,  {NFONT_LIST_NULL}},
@@ -222,6 +224,7 @@ struct ENCODING_NAME {
 
 static struct ENCODING_NAME encoding_name[] = {
     {ENC_NOENC,	     "NOENC"},
+#if 0
 //# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "SJIS"},
     {ENC_EUCJ,	     "EUCJP"},
@@ -231,6 +234,7 @@ static struct ENCODING_NAME encoding_name[] = {
     {ENC_BIG5,	     "BIG5"},
     {ENC_EUCKR,	     "EUCKR"},
 //# endif
+#endif
     {ENC_KOI8R,	     "KOI8R"},
     {ENC_KOI8U,	     "KOI8U"},
     {ENC_ISO8859_1,  "ISO8859-1"},
@@ -254,6 +258,7 @@ static struct ENCODING_NAME encoding_name[] = {
 #ifdef XFT_SUPPORT
 static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
     {ENC_NOENC,	     DEFAULT_XFT_FONT_NAME},
+#if 0
 //# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "Kochi Gothic"},
     {ENC_EUCJ,	     "Kochi Gothic"},
@@ -263,6 +268,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
     {ENC_BIG5,	     "MingLiU"},
     {ENC_EUCKR,	     "Luxi Mono"},
 //# endif
+#endif
     {ENC_KOI8R,	     "Courier New"},
     {ENC_KOI8U,	     "Courier New"},
     {ENC_ISO8859_1,  DEFAULT_XFT_FONT_NAME},
@@ -285,6 +291,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_xft[] = {
 
 static struct FALLBACK_FONT_LIST fallback_mfont_list_x11[] = {
     {ENC_NOENC,	     "-*-*-*-r-*-*-*-*-*-c-*-iso8859-1"},
+#if 0
 //# ifdef MULTICHAR_SET
     {ENC_SJIS,	     "-*-*-*-r-*-*-*-*-*-c-*-jisx0208*-0"},
     {ENC_EUCJ,	     "-*-*-*-r-*-*-*-*-*-c-*-jisx0208*-0"},
@@ -294,6 +301,7 @@ static struct FALLBACK_FONT_LIST fallback_mfont_list_x11[] = {
     {ENC_BIG5,	     "-*-*-*-*-*-*-*-*-*-*-c-*-big5-0"},
     {ENC_EUCKR,	     "-*-*-*-*-*-*-*-*-*-*-c-*-ksc5601*-0"},
 //# endif
+#endif
     {ENC_KOI8R,	     "-*-*-*-r-*-*-*-*-*-c-*-koi8-r"},
     {ENC_KOI8U,	     "-*-*-*-r-*-*-*-*-*-c-*-koi8-u"},
     {ENC_ISO8859_1,  "-*-*-*-r-*-*-*-*-*-c-*-iso8859-1"},

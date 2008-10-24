@@ -506,6 +506,12 @@ rxvt_clean_exit (rxvt_t* r)
 #endif
     SET_NULL(r->TermWin.font);	    /* clear font */
 
+#ifdef HAVE_ICONV_H
+    iconv_close (r->TermWin.global_state);
+#else
+    rxvt_free (r->TermWin->global_state);
+#endif
+
 # ifdef XFT_SUPPORT
     if (NOT_NULL(r->TermWin.xftfont))
     {
