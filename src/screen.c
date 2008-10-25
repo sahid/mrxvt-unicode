@@ -2981,6 +2981,9 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 	rend_t rend, int pfont,
 	XftDraw* win, XftColor* fore, int x, int y, text_t* str, int len)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN,
+		"rxvt_draw_string_xft (r, d, gc, refreshRegion, rend, pfont: %d, win, fore, x: %d, y: %d, str, len: %d)\n",
+		pfont, x, y, len));
     XftFont *font;
     int fontid = ((rend & RS_fontID) >> 24);
     //printf ("fontid = %X\n", rend);
@@ -3003,8 +3006,9 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 #endif
     //else
     font = r->TermWin.xftfont[fontid];
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\tUsing font number %d.\n", fontid));
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Draw: 0x%8x %p: '%.40s'\n", rend, font, str ));
+    //rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Draw: 0x%8x %p: '%.40s'\n", rend, font, str ));
 
 # ifdef TEXT_SHADOW
     if (r->h->rs[Rs_textShadow] && SHADOW_NONE != r->TermWin.shadow_mode)
@@ -3015,7 +3019,7 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 	XGlyphInfo  extents;
 	int	sx, sy;	/* Shadow offsets */
 
-	rxvt_dbgmsg ((DBG_VERBOSE, DBG_SCREEN, "handling text shadow for %s (%d)\n", str, len));
+	rxvt_dbgmsg ((DBG_VERBOSE, DBG_SCREEN, "\tHandling text shadow.\n")); // for %s (%d)\n", str, len));
 
 	XftTextExtents32 (r->Xdisplay, font, (FcChar32*) str, len, &extents);
 
@@ -4259,9 +4263,10 @@ rxvt_scr_refresh (rxvt_t* r, int page, unsigned char refresh_type)
 		    /*if (dtp[col + 1] == 0 && i == 0)
 			cols++;
 		    else*/
-			cols -= i;
+		    cols -= i;
 
-		    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "Drawing %d(%d) chars: %.*s\n", len, echars-i, (len > 55) ? 55 : len, buffer));
+		    rxvt_dbgmsg ((DBG_DEBUG, DBG_SCREEN, "\tDrawing %d (%d extra chars) chars.\n", len, echars-i)); 
+		    //, (len > 55) ? 55 : len, buffer));
 		} /* if (!fprop) */
 		else if (col < r->TermWin.ncol - 1 && stp[col + 1] == 0)
 		{

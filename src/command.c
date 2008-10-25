@@ -2231,6 +2231,9 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 	    rxvt_tabbar_highlight_tab (r, i, False);
 	}
 	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t%d characters converted.\n", countwc));
+#ifndef HAVE_ICONV_H
+	PVTS(r, i)->textbuf_end += countwc;
+#endif
     }   /* for loop */
 
 }
