@@ -2098,7 +2098,7 @@ rxvt_monitor_tab(rxvt_t* r,int i)
 void
 mrxvt_process_children_raw_output (rxvt_t* r, int page)
 {
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "mrxvt_process_child_output (r, %d).\n", page));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "mrxvt_process_child_output (r, page: %d).\n", page));
     register int i, last;
     if (page < 0)
     {
@@ -2158,7 +2158,8 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		byte_buffer, &byte_left,
 		(char**) &PVTS(r, i)->textbuf_end, &textbuf_room);
 #else
-	countwc = mbsrtowcs (PVTS(r, i)->textbuf_end, byte_buffer, textbuf_room, PVTS(r, page)->shift_state);
+	countwc = mbsrtowcs ((wchar_t*) PVTS(r, i)->textbuf_end,
+		byte_buffer, textbuf_room, PVTS(r, page)->shift_state);
 #endif
 	if (IS_NULL (*byte_buffer))
 	    /* 
@@ -2175,11 +2176,14 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		 * In this case PVTS(r, i)->outbuf_start is left pointing to the invalid multibyte sequence.
 		 * PVTS(r, i)->textbuf_end is updated as wanted.
 		 */
+#ifdef HAVE_ICONV_H
+		(*byte_buffer)++;
+#else
 		while ((PVTS(r, i)->outbuf_end - PVTS(r, i)->outbuf_start) > 4
 			&& countwc == -1
 			&& *byte_buffer < (char *) PVTS(r, i)->outbuf_end)
 		{
-		    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "An invalid multibyte sequence has been encountered and removed in tab %d.", i));
+		    rxvt_dbgmsg ((DBG_WARN, DBG_COMMAND,  "\tAn invalid multibyte sequence has been encountered and removed in tab %d.", i));
 		    (*byte_buffer)++;
 		    countwc = mbsrtowcs ((wchar_t*) PVTS(r, i)->textbuf_end, (const char**) byte_buffer, 1, NULL);
 		}
@@ -2189,6 +2193,7 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		 * but maybe later (depending on the current encoding).
 		 * Just let this like this and let's see at the next iteration.
 		 */
+#endif
 	    }
 #ifdef HAVE_ICONV_H
 	    else if (errno == E2BIG)
@@ -2200,7 +2205,8 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 #endif
 	    else // should not occure!
 	    {
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "In rxvt_process_children_cmdfd, mbsrtowcs failed with errno = %i. This should not occure.\n", errno));
+		rxvt_dbgmsg ((DBG_ERROR, DBG_COMMAND,
+			    "In rxvt_process_children_raw_output, conversion failure with errno = %i. This should not occure.\n", errno));
 		assert (0);
 	    }
 
@@ -2224,6 +2230,7 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 	{
 	    rxvt_tabbar_highlight_tab (r, i, False);
 	}
+	rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\t%d characters converted.\n", countwc));
     }   /* for loop */
 
 }
