@@ -124,9 +124,11 @@ typedef struct
     XFontSet	    fontset;
 //#endif
 #  ifdef HAVE_ICONV_H
-    iconv_t	    global_state;
+    iconv_t	    internal_converter;
+    iconv_t	    external_converter;
 #else
-    mbstate_t*	    global_state; // Multi-bite Shift state in C99 standard.
+    mbstate_t*	    internal_converter; // Multi-bite Shift state in C99 standard.
+    mbstate_t*	    external_converter; // Multi-bite Shift state in C99 standard.
 #endif
 #ifdef XFT_SUPPORT
     XftPattern	    **xftpattern;
@@ -671,10 +673,13 @@ typedef struct
     text_t UNTAINTED *	tab_title;  	/* tab title */
     unsigned int	tab_title_length; /* Number of character in the tab title */
 
-    char	    *title_format;	/* Format to be used to display the tab
+    text_t*	    title_format;	/* Format to be used to display the tab
 					   title */
-    char	    *winTitleFormat;	/* Format of the window title (used when
+    unsigned int    title_format_length;
+
+    text_t*	    winTitleFormat;	/* Format of the window title (used when
 					   syncing the tab title */
+    unsigned int    winTitleFormat_length;
 
     /* moved from rxvt_t */
     int             cmd_fd; /* pty file descriptor; connected to command */

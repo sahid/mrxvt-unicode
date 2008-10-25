@@ -510,7 +510,7 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 
 	    rect.x = x;
 	    rect.y = y - r->TermWin.pheight;
-	    rect.width = PVTS(r, tnum)->tab_width - 2*TXT_XOFF;
+	    rect.width = PVTS(r, tnum)->tab_width - 2 * TXT_XOFF;
 	    rect.height = r->TermWin.pheight;
 
 	    clipRegion = XCreateRegion();
@@ -523,7 +523,8 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
 
 	    y -= r->TermWin.xftpfont->descent;
 	}
-	else y -= r->TermWin.xftfont[0]->descent; // TODO
+	else
+	    y -= r->TermWin.xftfont[0]->descent; // TODO
     }
     else
 #endif /* XFT_SUPPORT */
@@ -535,12 +536,13 @@ draw_title (rxvt_t* r, int x, int y, int tnum, Region region)
      */
 #ifdef XFT_SUPPORT
     if(
-	  NOTSET_OPTION( r, Opt_xft )			||
-	  IS_NULL( r->TermWin.xftpfont )		||
-	  IS_NULL( PVTS(r, tnum)->title_format )   	||
+	  NOTSET_OPTION (r, Opt_xft)			||
+	  IS_NULL (r->TermWin.xftpfont)			||
+	  IS_NULL (PVTS(r, tnum)->title_format)   	||
 	  rxvt_percent_interpolate( r, tnum,
 		PVTS(r, tnum)->title_format,
-		STRLEN( PVTS(r, tnum)->title_format ),
+		//STRLEN( PVTS(r, tnum)->title_format ),
+		PVTS(r, tnum)->title_format_length,
 		str, r->TermWin.maxTabWidth ) <= 1
       )
 #endif /* XFT_SUPPORT */
@@ -2500,7 +2502,8 @@ rxvt_tab_width (rxvt_t *r, const text_t* str)
 		    return (2 * TXT_XOFF + xrect.width);
 	    }
 	    else
-		return (2 * TXT_XOFF + XTextWidth (r->TermWin.font, str, len));
+		//return (2 * TXT_XOFF + XTextWidth (r->TermWin.font, str, len));
+		return (2 * TXT_XOFF + Col2Pixel (len));
 	}
     }
 }
@@ -2716,22 +2719,77 @@ rxvt_tabbar_move_tab (rxvt_t* r, short newPage)
  * Synchronize the window title to the title of the tab "page".
  */
 void
-sync_tab_title( rxvt_t *r, int page )
+sync_tab_title (rxvt_t *r, int page)
 {
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR,  "rxvt_tab_title (r, page: %d)\n", page));
     text_t wintitle[MAX_TAB_TXT];
 
     if(
-	 IS_NULL( PVTS(r,page)->winTitleFormat )	||
-	 rxvt_percent_interpolate( r, page,
-	     PVTS(r,page)->winTitleFormat, STRLEN(PVTS(r,page)->winTitleFormat),
-	     wintitle, MAX_TAB_TXT ) <= 1
+	 IS_NULL (PVTS(r,page)->winTitleFormat )	||
+	 rxvt_percent_interpolate (r, page,
+	     PVTS(r,page)->winTitleFormat, //STRLEN(PVTS(r,page)->winTitleFormat),
+	     PVTS(r,page)->winTitleFormat_length,
+	     wintitle, MAX_TAB_TXT) <= 1
       )
     {
 	/* % interpolation failed / not possible */
-	rxvt_set_term_title( r, (text_t*) PVTS(r, page)->tab_title );
+	char* tab_title = PVTS(r, page)->tab_title;
+#ifdef HAVE_ICONV_H
+	char** text_input = (char**) &tab_title;
+#else
+	const char** text_input = (const char**) &tab_title;
+#endif
+	size_t text_left = PVTS(r, page)->tab_title_length * sizeof (text_t); 
+
+	//PVTS(r, page)->title_format = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+	char* str_to_sync = rxvt_malloc (PVTS(r, page)->tab_title_length * 4 + 1);
+	char* str_to_sync_copy = str_to_sync;
+	char** byte_output = &str_to_sync_copy;
+	size_t byte_left = PVTS(r, page)->tab_title_length * 4 + 1;
+#ifdef HAVE_ICONV_H
+	//size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
+	iconv (r->TermWin.external_converter, NULL, NULL, NULL, NULL);
+	iconv (r->TermWin.external_converter, text_input, &text_left, byte_output, &byte_left); 
+	//PVTS(r, page)->title_format_length = r->TermWin.maxTabWidth - byte_left;
+	**byte_output = '\0';
+#else
+	//size_t text_left = r->TermWin.maxTabWidth;
+	mbsrtowcs (*byte_output, text_input, byte_left, r->TermWin.external_converter);
+#endif
+	//rxvt_set_term_title (r, (text_t*) PVTS(r, page)->tab_title);
+	rxvt_set_term_title (r, (unsigned char*) str_to_sync);
+	rxvt_free (str_to_sync);
     }
     else
-	rxvt_set_term_title( r, (text_t*) wintitle );
+    {
+	char* tab_title = (char*) wintitle;
+#ifdef HAVE_ICONV_H
+	char** text_input = (char**) &tab_title;
+#else
+	const char** text_input = (const char**) &tab_title;
+#endif
+	size_t text_left = MAX_TAB_TXT * sizeof (text_t); 
+
+	//PVTS(r, page)->title_format = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+	char* str_to_sync = rxvt_malloc (MAX_TAB_TXT * 4 + 1);
+	char* str_to_sync_copy = str_to_sync;
+	char** byte_output = &str_to_sync_copy;
+	size_t byte_left = MAX_TAB_TXT * 4 + 1;
+#ifdef HAVE_ICONV_H
+	//size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
+	iconv (r->TermWin.external_converter, NULL, NULL, NULL, NULL);
+	iconv (r->TermWin.external_converter, text_input, &text_left, byte_output, &byte_left); 
+	//PVTS(r, page)->title_format_length = r->TermWin.maxTabWidth - byte_left;
+	**byte_output = '\0';
+#else
+	//size_t text_left = r->TermWin.maxTabWidth;
+	mbsrtowcs (byte_output, text_input, byte_left, r->TermWin.external_converter);
+#endif
+	//rxvt_set_term_title (r, (text_t*) PVTS(r, page)->tab_title);
+	rxvt_set_term_title (r, (unsigned char*) str_to_sync);
+	rxvt_free (str_to_sync);
+	//rxvt_set_term_title (r, (text_t*) wintitle );
+    }
 }
 
 /*----------------------- end-of-file (C source) -----------------------*/

@@ -507,9 +507,11 @@ rxvt_clean_exit (rxvt_t* r)
     SET_NULL(r->TermWin.font);	    /* clear font */
 
 #ifdef HAVE_ICONV_H
-    iconv_close (r->TermWin.global_state);
+    iconv_close (r->TermWin.internal_converter);
+    iconv_close (r->TermWin.external_converter);
 #else
-    rxvt_free (r->TermWin->global_state);
+    rxvt_free (r->TermWin->internal_converter);
+    rxvt_free (r->TermWin->external_converter);
 #endif
 
 # ifdef XFT_SUPPORT
@@ -2451,7 +2453,7 @@ rxvt_set_win_title (rxvt_t* r, Window win, const char* str)
 
 /* EXTPROTO */
 void
-rxvt_set_term_title (rxvt_t* r, const unsigned char *str)
+rxvt_set_term_title (rxvt_t* r, const unsigned char* str)
 {
 #ifdef SMART_WINDOW_TITLE
     //XTextProperty   prop;

@@ -6279,18 +6279,25 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 
 	case MRxvt_tformat:
 	{
-	    int len = STRLEN(str);
+	    int len = STRLEN(str); // TODO
 
 	    if(
-		  IS_NULL( PVTS(r, page)->title_format )	||
-		  len != STRLEN( PVTS(r, page)->title_format )
+		  IS_NULL (PVTS(r, page)->title_format )	//||
+		  //len != PVTS(r, page)->title_format_length //STRLEN( PVTS(r, page)->title_format )
 	      )
 	    {
-		rxvt_free( PVTS(r, page)->title_format );
-		PVTS(r, page)->title_format = STRDUP(str);
+		//rxvt_free (PVTS(r, page)->title_format);
+		//PVTS(r, page)->title_format = STRDUP(str);
+		PVTS(r, page)->title_format = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+		memcpy (PVTS(r, page)->title_format, str, len);
+		PVTS(r, page)->title_format_length = len / sizeof (text_t);
 	    }
 	    else
-		STRCPY( PVTS(r, page)->title_format, str );
+	    {
+		memcpy (PVTS(r, page)->title_format, str, len);
+		PVTS(r, page)->title_format_length = len / sizeof (text_t);
+		//STRCPY( PVTS(r, page)->title_format, str );
+	    }
 
 	    /* Redraw the tab title. */
 	    refresh_tabbar_tab( r, page );
@@ -6303,15 +6310,22 @@ rxvt_xterm_seq(rxvt_t* r, int page, int op, const text_t *str, unsigned char res
 	    int len = STRLEN(str);
 	    
 	    if(
-		 IS_NULL( PVTS(r, page)->winTitleFormat )	||
-		 len != STRLEN( PVTS(r,page)->winTitleFormat )
+		 IS_NULL( PVTS(r, page)->winTitleFormat )	//||
+		 //len != STRLEN( PVTS(r,page)->winTitleFormat )
 	      )
 	    {
-		rxvt_free( PVTS(r,page)->winTitleFormat );
-		PVTS(r,page)->winTitleFormat = STRDUP(str);
+		//rxvt_free( PVTS(r,page)->winTitleFormat );
+		//PVTS(r,page)->winTitleFormat = STRDUP(str);
+		PVTS(r, page)->winTitleFormat = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+		memcpy (PVTS(r, page)->winTitleFormat, str, len);
+		PVTS(r, page)->winTitleFormat_length = len / sizeof (text_t);
 	    }
 	    else
-		STRCPY( PVTS(r,page)->winTitleFormat, str );
+	    {
+		memcpy (PVTS(r, page)->winTitleFormat, str, len);
+		PVTS(r, page)->winTitleFormat_length = len / sizeof (text_t);
+		//STRCPY( PVTS(r,page)->winTitleFormat, str );
+	    }
 
 	    if( ISSET_OPTION( r, Opt2_syncTabTitle ) )
 		sync_tab_title( r, ATAB(r) );

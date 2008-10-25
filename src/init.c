@@ -672,10 +672,13 @@ rxvt_init_vars(rxvt_t *r)
 #ifdef HAVE_ICONV_H
     // after being used
     // this must always be set to the initial state by calling
-    // iconv (global_state, NULL, NULL, NULL, NULL);
-    r->TermWin.global_state = iconv_open ("WCHAR_T", "");
+    // iconv (internal_converter, NULL, NULL, NULL, NULL);
+    r->TermWin.internal_converter = iconv_open ("WCHAR_T", "");
+    r->TermWin.external_converter = iconv_open ("", "WCHAR_T");
 #else
-    mbstate_t* mbst = r->TermWin.global_state = rxvt_malloc (sizeof (mbstate_t));
+    mbstate_t* mbst = r->TermWin.internal_converter = rxvt_malloc (sizeof (mbstate_t));
+    memset (mbst, 0, sizeof(mbst));
+    mbst = r->TermWin.external_converter = rxvt_malloc (sizeof (mbstate_t));
     memset (mbst, 0, sizeof(mbst));
 #endif
 
@@ -2877,14 +2880,60 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
      * Set the tab title format, and window title format. getProfileOption
      * returns a static string, so duplicate it here
      */
+    const char *stf = getProfileOption (r, profile, Rs_titleFormat);
+    if (IS_NULL (stf))
+	PVTS(r, page)->title_format = NULL;
+    else
     {
-	const char *stf = getProfileOption( r, profile, Rs_titleFormat );
-	PVTS(r, page)->title_format = NOT_NULL(stf) ? STRDUP(stf) : NULL;
+	//char** stf_copy = (char**) &(STRDUP (stf));
+
+#ifdef HAVE_ICONV_H
+	char** byte_input = (char**) &stf; //stf_copy;
+#else
+	const char** byte_input = (const char**) &stf; //stf_copy;
+#endif
+	size_t byte_left = STRLEN (byte_input);
+
+	PVTS(r, page)->title_format = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+	char** text_output = (char**) &PVTS(r, page)->title_format; 
+#ifdef HAVE_ICONV_H
+	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
+	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
+	iconv (r->TermWin.internal_converter, byte_input, &byte_left, text_output, &text_left); 
+	PVTS(r, page)->title_format_length = r->TermWin.maxTabWidth - text_left;
+#else
+	size_t text_left = r->TermWin.maxTabWidth;
+	PVTS(r, page)->title_format_length = mbsrtowcs (*text_output, byte_input, text_left, r->TermWin.internal_converter);
+#endif
+
+	//rxvt_free (stf_copy);
+	//PVTS(r, page)->title_format = NOT_NULL(stf) ? STRDUP(stf) : NULL;
     }
 
+    const char *wtf = getProfileOption( r, profile, Rs_winTitleFormat );
+    if (IS_NULL (wtf))
+	PVTS(r, page)->winTitleFormat = NULL;
+    else
     {
-	const char *wtf = getProfileOption( r, profile, Rs_winTitleFormat );
-	PVTS(r, page)->winTitleFormat = NOT_NULL(wtf) ? STRDUP(wtf) : NULL;
+	//PVTS(r, page)->winTitleFormat = NOT_NULL(wtf) ? STRDUP(wtf) : NULL;
+#ifdef HAVE_ICONV_H
+	char** byte_input = (char**) &wtf; //stf_copy;
+#else
+	const char** byte_input = (const char**) &wtf; //stf_copy;
+#endif
+	size_t byte_left = STRLEN (byte_input);
+
+	PVTS(r, page)->winTitleFormat = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
+	char** text_output = (char**) &PVTS(r, page)->winTitleFormat; 
+#ifdef HAVE_ICONV_H
+	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
+	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
+	iconv (r->TermWin.internal_converter, byte_input, &byte_left, text_output, &text_left); 
+	PVTS(r, page)->winTitleFormat_length = r->TermWin.maxTabWidth - text_left;
+#else
+	size_t text_left = r->TermWin.maxTabWidth;
+	PVTS(r, page)->winTitleFormat_length = mbsrtowcs (*text_output, byte_input, text_left, r->TermWin.internal_converter);
+#endif
     }
 
 #ifdef BACKGROUND_IMAGE
@@ -3008,9 +3057,10 @@ rxvt_destroy_termwin( rxvt_t *r, int page )
 
     rxvt_free (PVTS(r, page)->tab_title);
     SET_NULL(PVTS(r, page)->tab_title);
+    PVTS(r, page)->tab_title_length = 0;
 
-    rxvt_free( PVTS(r, page)->title_format );
-    SET_NULL( PVTS(r, page)->title_format );
+    rxvt_free (PVTS(r, page)->title_format);
+    SET_NULL (PVTS(r, page)->title_format);
 
 #ifdef XFT_SUPPORT
     if (ISSET_OPTION(r, Opt_xft))
