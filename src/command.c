@@ -2127,8 +2127,8 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 	 */
 	unsigned int countwc;
 	size_t textbuf_room;
-#ifdef HAVE_ICONV_H
 	size_t byte_left;
+#ifdef HAVE_ICONV_H
 	char ** byte_buffer = (char**) &PVTS(r, i)->outbuf_start;
 #else
 	const char ** byte_buffer = (const char**) &PVTS(r, i)->outbuf_start;

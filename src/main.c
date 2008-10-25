@@ -510,8 +510,8 @@ rxvt_clean_exit (rxvt_t* r)
     iconv_close (r->TermWin.internal_converter);
     iconv_close (r->TermWin.external_converter);
 #else
-    rxvt_free (r->TermWin->internal_converter);
-    rxvt_free (r->TermWin->external_converter);
+    rxvt_free (r->TermWin.internal_converter);
+    rxvt_free (r->TermWin.external_converter);
 #endif
 
 # ifdef XFT_SUPPORT
