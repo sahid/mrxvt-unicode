@@ -920,7 +920,7 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 		else
 		{
 		    //if (r->TermWin.xftbfont->max_advance_width > r->TermWin.fwidth)
-		    if (extents.xOff > r->TermWin.fwidth)
+		    if (extents.xOff > r->TermWin.fwidth + 1)
 		    {
 			rxvt_msg (DBG_ERROR, DBG_MAIN,  "Bold font (%d) too wide. Using overstrike.", findex);
 			XftFontClose (r->Xdisplay, r->TermWin.xftbfont[bfindex]);
@@ -930,6 +930,8 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 			SET_NULL (xftbpattern);
 			continue;
 		    }
+		    else // either same size of just one pixel larger...
+			r->TermWin.fwidth = extents.xOff;
 
 		    /*
 		     * Now we're either overstriking, or using a correctly sized
@@ -1192,6 +1194,8 @@ rxvt_init_font_xft (rxvt_t* r)
     char	    *fnames, *fname;	    /* font name to open */
     int		    num_font_loaded = 0;
     FcChar8*	    ofname = NULL;  /* actually opened font name */
+    int		previous_font_index;
+    FcChar8*	previous_font_name;
 # ifdef DEBUG
     FT_Face	    face;
 # endif
@@ -1209,9 +1213,18 @@ rxvt_init_font_xft (rxvt_t* r)
     /* font family */
     fnames = (char*) r->h->rs[Rs_xftfont];
     if (IS_NULL(fnames))
-	fnames = DEFAULT_XFT_FONT_NAME;
+    {
+	//fnames = DEFAULT_XFT_FONT_NAME;
+	fnames = rxvt_malloc (STRLEN (DEFAULT_XFT_FONT_NAME) + 1);
+	strcpy (fnames, DEFAULT_XFT_FONT_NAME);
+    }
+    else
+    {
+	fnames = rxvt_malloc (STRLEN (r->h->rs[Rs_xftfont]) + 1);
+	strcpy (fnames, r->h->rs[Rs_xftfont]);
+    }
 
-    fname = strtok (fnames, ",");
+    fname = strtok (fnames, ";");
 
     do
     {
@@ -1219,12 +1232,13 @@ rxvt_init_font_xft (rxvt_t* r)
 	{
 	    XftPatternDestroy (xp);
 	}
-	xp = XftPatternCreate ();
+	//xp = XftPatternCreate ();
+	xp = XftNameParse (fname);
 	if (IS_NULL(xp))
 	    break;
 
-	rxvt_dbgmsg ((DBG_VERBOSE, DBG_MAIN, "load freetype font %s\n", fname));
-	XftPatternAddString (xp, XFT_FAMILY, fname);
+	rxvt_dbgmsg ((DBG_VERBOSE, DBG_MAIN, "\tLoad freetype font '%s'.\n", fname));
+	//XftPatternAddString (xp, XFT_FAMILY, fname);
 
 	/* No spacing between lines */
 	XftPatternAddBool (xp, XFT_MINSPACE, FcFalse);
@@ -1342,7 +1356,7 @@ rxvt_init_font_xft (rxvt_t* r)
 	if (IS_NULL(r->TermWin.xftpattern[num_font_loaded]))
 	{
 	    /* Not fatale, I continue. Next fonts may still be loaded. */
-	    fname = strtok (NULL, ",");
+	    fname = strtok (NULL, ";");
 	    continue;
 	}
 
@@ -1364,19 +1378,32 @@ rxvt_init_font_xft (rxvt_t* r)
 	XftPatternGetString (r->TermWin.xftpattern[num_font_loaded], XFT_FAMILY, 0, &ofname);
 	assert (NOT_NULL(ofname));	/* shouldn't be NULL */
 
-	len = STRLEN(fname);
-	olen = STRLEN(ofname);
-	if (STRCMP (fname, DEFAULT_XFT_FONT_NAME) 	/* Not the default font */
+	//len = STRLEN(fname);
+	olen = STRLEN((char*) ofname);
+	for (previous_font_index = 0; previous_font_index < num_font_loaded; previous_font_index++)
+	{
+		XftPatternGetString (r->TermWin.xftpattern[previous_font_index], XFT_FAMILY, 0, &previous_font_name);
+		len = STRLEN ((char*) (previous_font_name));
+		if (len == olen && STRNCASECMP ((char*) ofname, (char*) previous_font_name, len) == 0)
+			break;
+	}
+	if (previous_font_index != num_font_loaded)
+	{
+		XftPatternDestroy (r->TermWin.xftpattern[num_font_loaded]);
+		fname = strtok (NULL, ";");
+		continue;
+	}
+	//if (STRCMP (fname, DEFAULT_XFT_FONT_NAME) 	/* Not the default font */
 		/* Not opened font */
-		&& (len != olen || STRNCASECMP ((char*) ofname, fname, len))
-	  )
+	//	&& (len != olen || STRNCASECMP ((char*) ofname, fname, len))
+	  /*)
 	    rxvt_msg( DBG_ERROR, DBG_MAIN,
 		    "Cannot open font '%s'. Using font '%s' instead.\n",
-		    fname, ofname);
+		    fname, ofname);*/
 
-	rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN,
+	/*rxvt_dbgmsg ((DBG_DEBUG, DBG_MAIN,
 		    "create xftpattern = 0x%x on font %d\n",
-		    (unsigned int) r->TermWin.xftpattern[num_font_loaded], r->TermWin.xftsize));
+		    (unsigned int) r->TermWin.xftpattern[num_font_loaded], r->TermWin.xftsize));*/
 
 	/*
 	 * Actually open the font.
@@ -1396,17 +1423,17 @@ rxvt_init_font_xft (rxvt_t* r)
 		r->TermWin.xftfont = temp_xftfont;
 	}
 
-	r->TermWin.xftfont[num_font_loaded] = XftFontOpenPattern (r->Xdisplay, r->TermWin.xftpattern[num_font_loaded]);
+	r->TermWin.xftfont[num_font_loaded] = XftFontOpenPattern (r->Xdisplay, XftPatternDuplicate (r->TermWin.xftpattern[num_font_loaded]));
 
 	if (IS_NULL(r->TermWin.xftfont[num_font_loaded]))
 	{
 	    //if (r->TermWin.xftpattern[num_font_loaded]) // && r->TermWin.xftpattern != xp)
 	    //{
 	    XftPatternDestroy (r->TermWin.xftpattern[num_font_loaded]);
-	    SET_NULL(r->TermWin.xftpattern);
+	    SET_NULL(r->TermWin.xftpattern[num_font_loaded]);
 	    //}
 	    //goto Failure;
-	    fname = strtok (NULL, ",");
+	    fname = strtok (NULL, ";");
 	    continue;
 	}
 
@@ -1428,7 +1455,7 @@ rxvt_init_font_xft (rxvt_t* r)
 		r->TermWin.xftfont[num_font_loaded]->descent;*/
 
 	num_font_loaded++;
-	fname = strtok (NULL, ",");
+	fname = strtok (NULL, ";");
     }
     while (NULL != fname || num_font_loaded == 8);
 
@@ -1448,6 +1475,7 @@ rxvt_init_font_xft (rxvt_t* r)
 	    XftPatternDestroy (r->TermWin.xftpattern);
 	    SET_NULL(r->TermWin.xftpattern);
 	}*/
+	rxvt_free (fnames);
 	return 0;
     }
 
@@ -1622,6 +1650,7 @@ rxvt_init_font_xft (rxvt_t* r)
 
     XftPatternDestroy (xp);
 
+    rxvt_free (fnames);
     return 1;
 
 
@@ -1935,7 +1964,10 @@ xftFreeUnusedFont (rxvt_t *r, XftFont *f)
 	}
 # endif
 	if (! used_font)
+	{
 	    XftFontClose( r->Xdisplay, f);
+	    SET_NULL (f);
+	}
     }
 }
 
@@ -2036,14 +2068,14 @@ rxvt_change_font_xft (rxvt_t* r, const char* fontname)
     }
 
     /* The old Xft font (if differnt) can now be freed */
-    for (; numxf--; xf++)
+    /*for (; numxf--; xf++)
     {
 	xftFreeUnusedFont (r, *xf); // TODO
-	if (pxf != *xf)
+	if (NOT_NULL (*xf) && pxf != *xf)
 	    xftFreeUnusedFont (r, pxf);
-	if (Pxf != *xf && Pxf != pxf)
+	if (NOT_NULL (*xf) && Pxf != *xf && Pxf != pxf)
 	    xftFreeUnusedFont (r, Pxf);
-    }
+    }*/
 
 #if 0
 #ifdef MULTICHAR_SET

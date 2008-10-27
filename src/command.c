@@ -1612,10 +1612,10 @@ rxvt_clean_cmd_page (rxvt_t* r)
 		    text_t	tabTitle[maxLen];
 
 		    rxvt_percent_interpolate( r, i, msg, STRLEN(msg),
-			    (char*) tabTitle, maxLen );
-		    rxvt_str_escaped( (char*) tabTitle );
+			    tabTitle, maxLen );
+		    rxvt_str_escaped (tabTitle );
 
-		    rxvt_tabbar_set_title( r, i, tabTitle );
+		    rxvt_tabbar_set_title (r, i, tabTitle);
 		}
 	    } /* if( SHOULD_HOLD( r, i ) ) */
 	    else

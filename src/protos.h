@@ -195,7 +195,7 @@ char           * rxvt_r_basename                  __PROTO((const char* str));
 int              rxvt_str_match                   __PROTO((const char* s1, const char* s2));
 const char*      rxvt_str_skip_space              __PROTO((const char* str));
 char*            rxvt_str_trim                    __PROTO((char* str));
-int              rxvt_str_escaped                 __PROTO((char* str));
+int              rxvt_str_escaped                 __PROTO((text_t* str));
 int		 rxvt_percent_interpolate         __PROTO((rxvt_t*, int, const text_t*, int, text_t*, int));
 char**           rxvt_splitcommastring            __PROTO((const char* cs));
 char*            rxvt_File_find                   __PROTO((const char* file, const char* ext, const char* path));

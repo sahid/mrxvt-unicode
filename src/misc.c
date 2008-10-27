@@ -124,12 +124,13 @@ rxvt_str_trim(char *str)
  */
 /* EXTPROTO */
 int
-rxvt_str_escaped(char *str)
+rxvt_str_escaped(text_t *str)
 {
-    char            ch, *s, *d;
+    text_t	    ch, *s, *d;
     int             i, num;
 
-    if (IS_NULL(str) || *str == '\0') return 0;
+    if (IS_NULL (str) || *str == '\0')
+	return 0;
 
     d = s = str;
 
@@ -171,7 +172,7 @@ rxvt_str_escaped(char *str)
 			break;
 		    num = num * 8 + ch - '0';
 		}
-		ch = (char)num;
+		ch = (text_t) num;
 	    }
 	    else if (ch == 'a')
 		ch = C0_BEL;	/* bell */
