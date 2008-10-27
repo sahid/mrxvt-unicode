@@ -299,6 +299,8 @@ rxvt_tabbar_set_visible_tabs (rxvt_t* r, Bool refresh)
 		XClearArea( r->Xdisplay, r->tabBar.win,
 			x, 0, TAB_SPACE - x + 1, 0, True);
 	    }
+	/*	XClearArea( r->Xdisplay, r->tabBar.win,
+			0, 0, TAB_SPACE, 0, True);*/
 	}
     }
     else
@@ -1530,20 +1532,20 @@ rxvt_remove_page (rxvt_t* r, short page)
     LTAB(r)--;
     rxvt_dbgmsg ((DBG_DEBUG, DBG_TABBAR, "\tThe last tab is %d.", LTAB(r)));
 
-    if (FVTAB(r) > page)
+    /*if (FVTAB(r) > page)
 	FVTAB(r)--;
     if (LVTAB(r) > page)
     {
-	refresh_tabbar_tab( r, (LVTAB(r)));
+	//refresh_tabbar_tab( r, (LVTAB(r)));
 	LVTAB(r)--;
-    }
+    }*/
     /* Reorganize the tabs array. */
     /* update TermWin and tab_widths */
     for (i = page; i <= LTAB(r); i++)
     {
 	PVTS(r, i) = PVTS(r, i+1);
 	PVTS(r, i)->vts_idx = i;
-	refresh_tabbar_tab( r, i);
+	//refresh_tabbar_tab( r, i);
     }
 
     {
