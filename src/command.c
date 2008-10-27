@@ -2176,24 +2176,43 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		 * In this case PVTS(r, i)->outbuf_start is left pointing to the invalid multibyte sequence.
 		 * PVTS(r, i)->textbuf_end is updated as wanted.
 		 */
+		//(*byte_buffer)++;
 #ifdef HAVE_ICONV_H
-		(*byte_buffer)++;
+		if (countwc == -1 && *byte_buffer < (char *) PVTS(r, i)->outbuf_end)
+		{
+		    rxvt_dbgmsg ((DBG_WARN, DBG_COMMAND,  "\tAn invalid byte ('0x%c') has been encountered and removed in tab %d.\n", **byte_buffer, i));
+		    (*byte_buffer)++;
+		    countwc = PVTS(r, i)->textbuf_end - last_textbuf_end;
+		    if (NOTSET_OPTION(r, Opt2_hlTabOnBell) &&  countwc > 0 && i != ATAB(r))
+			rxvt_tabbar_highlight_tab (r, i, False);
+		    i--;
+		    continue;
+		}
 #else
 		while ((PVTS(r, i)->outbuf_end - PVTS(r, i)->outbuf_start) > 4
 			&& countwc == -1
 			&& *byte_buffer < (char *) PVTS(r, i)->outbuf_end)
 		{
-		    rxvt_dbgmsg ((DBG_WARN, DBG_COMMAND,  "\tAn invalid multibyte sequence has been encountered and removed in tab %d.", i));
+		    rxvt_dbgmsg ((DBG_WARN, DBG_COMMAND,  "\tAn invalid byte ('0x%c') has been encountered and removed in tab %d.\n", **byte_buffer, i));
 		    (*byte_buffer)++;
 		    countwc = mbsrtowcs ((wchar_t*) PVTS(r, i)->textbuf_end, (const char**) byte_buffer, 1, NULL);
+#if 0
+#ifdef HAVE_ICONV_H
+		    countwc = iconv (PVTS(r, i)->shift_state,
+			    byte_buffer, &byte_left,
+			    (char**) &PVTS(r, i)->textbuf_end, &textbuf_room);
+#else
+		    countwc = mbsrtowcs ((wchar_t*) PVTS(r, i)->textbuf_end, (const char**) byte_buffer, 1, NULL);
+#endif
+#endif
 		}
+#endif
 		/* 
 		 * If we have less than 4 bytes to convert,
 		 * it is possible that we did not have a full character yet,
 		 * but maybe later (depending on the current encoding).
 		 * Just let this like this and let's see at the next iteration.
 		 */
-#endif
 	    }
 #ifdef HAVE_ICONV_H
 	    else if (errno == E2BIG)
@@ -2210,11 +2229,13 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 		assert (0);
 	    }
 
-	    // PVTS(r, i)->textbuf_end - last_textbuf_end characters have been written to the buffer.
-	    // Note that iconv in particular does not return the number of characters converted,
-	    // but the number of characters 'converted in a non-reversible way'.
-	    countwc = PVTS(r, i)->textbuf_end - last_textbuf_end;
 	}
+
+	// PVTS(r, i)->textbuf_end - last_textbuf_end characters have been written to the buffer.
+	// Note that iconv in particular does not return the number of characters converted,
+	// but the number of characters 'converted in a non-reversible way'.
+	countwc = PVTS(r, i)->textbuf_end - last_textbuf_end;
+
 	/* 
 	 * The last case is when textbuf has been filled.
 	 * In such case, nothing to do.
@@ -2241,7 +2262,7 @@ mrxvt_process_children_raw_output (rxvt_t* r, int page)
 
 /* INTPROTO */
 void
-rxvt_process_children_cmdfd( rxvt_t* r, fd_set* p_readfds )
+rxvt_process_children_cmdfd (rxvt_t* r, fd_set* p_readfds)
 {
     /*
      * Handle the children that have generate input. Notice in this loop we only
