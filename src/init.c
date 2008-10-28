@@ -2888,9 +2888,9 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 	//char** stf_copy = (char**) &(STRDUP (stf));
 
 #ifdef HAVE_ICONV_H
-	char** byte_input = (char**) &stf; //stf_copy;
+	char* byte_input = (char*) stf; //stf_copy;
 #else
-	const char** byte_input = (const char**) &stf; //stf_copy;
+	const char* byte_input = (const char*) stf; //stf_copy;
 #endif
 	size_t byte_left = STRLEN (byte_input);
 
@@ -2899,11 +2899,11 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 #ifdef HAVE_ICONV_H
 	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
 	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
-	iconv (r->TermWin.internal_converter, byte_input, &byte_left, (char**) &text_output, &text_left); 
+	iconv (r->TermWin.internal_converter, &byte_input, &byte_left, (char**) &text_output, &text_left); 
 	PVTS(r, page)->title_format_length = r->TermWin.maxTabWidth - text_left;
 #else
 	size_t text_left = r->TermWin.maxTabWidth;
-	PVTS(r, page)->title_format_length = mbsrtowcs (text_output, byte_input, text_left, r->TermWin.internal_converter);
+	PVTS(r, page)->title_format_length = mbsrtowcs (text_output, &byte_input, text_left, r->TermWin.internal_converter);
 #endif
 
 	//rxvt_free (stf_copy);
@@ -2917,9 +2917,9 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
     {
 	//PVTS(r, page)->winTitleFormat = NOT_NULL(wtf) ? STRDUP(wtf) : NULL;
 #ifdef HAVE_ICONV_H
-	char** byte_input = (char**) &wtf; //stf_copy;
+	char* byte_input = (char**) wtf; //stf_copy;
 #else
-	const char** byte_input = (const char**) &wtf; //stf_copy;
+	const char* byte_input = (const char*) wtf; //stf_copy;
 #endif
 	size_t byte_left = STRLEN (byte_input);
 
@@ -2928,11 +2928,11 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 #ifdef HAVE_ICONV_H
 	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
 	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
-	iconv (r->TermWin.internal_converter, byte_input, &byte_left, (char**) &text_output, &text_left); 
+	iconv (r->TermWin.internal_converter, &byte_input, &byte_left, (char**) &text_output, &text_left); 
 	PVTS(r, page)->winTitleFormat_length = r->TermWin.maxTabWidth - text_left;
 #else
 	size_t text_left = r->TermWin.maxTabWidth;
-	PVTS(r, page)->winTitleFormat_length = mbsrtowcs (text_output, byte_input, text_left, r->TermWin.internal_converter);
+	PVTS(r, page)->winTitleFormat_length = mbsrtowcs (text_output, &byte_input, text_left, r->TermWin.internal_converter);
 #endif
     }
 
