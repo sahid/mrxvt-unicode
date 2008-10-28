@@ -2895,15 +2895,15 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 	size_t byte_left = STRLEN (byte_input);
 
 	PVTS(r, page)->title_format = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
-	char** text_output = (char**) &PVTS(r, page)->title_format; 
+	char* text_output = (char*) PVTS(r, page)->title_format; 
 #ifdef HAVE_ICONV_H
 	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
 	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
-	iconv (r->TermWin.internal_converter, byte_input, &byte_left, text_output, &text_left); 
+	iconv (r->TermWin.internal_converter, byte_input, &byte_left, (char**) &text_output, &text_left); 
 	PVTS(r, page)->title_format_length = r->TermWin.maxTabWidth - text_left;
 #else
 	size_t text_left = r->TermWin.maxTabWidth;
-	PVTS(r, page)->title_format_length = mbsrtowcs (*text_output, byte_input, text_left, r->TermWin.internal_converter);
+	PVTS(r, page)->title_format_length = mbsrtowcs (text_output, byte_input, text_left, r->TermWin.internal_converter);
 #endif
 
 	//rxvt_free (stf_copy);
@@ -2924,15 +2924,15 @@ rxvt_init_vts( rxvt_t *r, int page, int profile )
 	size_t byte_left = STRLEN (byte_input);
 
 	PVTS(r, page)->winTitleFormat = rxvt_malloc (r->TermWin.maxTabWidth * sizeof (text_t));
-	char** text_output = (char**) &PVTS(r, page)->winTitleFormat; 
+	char* text_output = (char*) &PVTS(r, page)->winTitleFormat; 
 #ifdef HAVE_ICONV_H
 	size_t text_left = r->TermWin.maxTabWidth * sizeof (text_t);
 	iconv (r->TermWin.internal_converter, NULL, NULL, NULL, NULL);
-	iconv (r->TermWin.internal_converter, byte_input, &byte_left, text_output, &text_left); 
+	iconv (r->TermWin.internal_converter, byte_input, &byte_left, (char**) &text_output, &text_left); 
 	PVTS(r, page)->winTitleFormat_length = r->TermWin.maxTabWidth - text_left;
 #else
 	size_t text_left = r->TermWin.maxTabWidth;
-	PVTS(r, page)->winTitleFormat_length = mbsrtowcs (*text_output, byte_input, text_left, r->TermWin.internal_converter);
+	PVTS(r, page)->winTitleFormat_length = mbsrtowcs (text_output, byte_input, text_left, r->TermWin.internal_converter);
 #endif
     }
 
