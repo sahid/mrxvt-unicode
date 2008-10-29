@@ -911,7 +911,7 @@ rxvt_init_bfont_xft (rxvt_t* r) //, XftPattern** xpold)
 		 * font, we should draw it like a proportionally spaced font.
 		 */
 
-		XftTextExtents8 (r->Xdisplay, r->TermWin.xftbfont[bfindex], (unsigned char*) "@",
+		XftTextExtents8 (r->Xdisplay, r->TermWin.xftbfont[bfindex], (unsigned char*) "W",
 			1, &extents);
 
 		//if (r->TermWin.xftbfont->max_advance_width < r->TermWin.fwidth)
@@ -1442,7 +1442,7 @@ rxvt_init_font_xft (rxvt_t* r)
 	 * loaded fonts.
 	 */
 	//r->TermWin.fwidth = r->TermWin.xftfont->max_advance_width / 2;
-	XftTextExtents8 (r->Xdisplay, r->TermWin.xftfont[num_font_loaded], (unsigned char*) "@",
+	XftTextExtents8 (r->Xdisplay, r->TermWin.xftfont[num_font_loaded], (unsigned char*) "W",
 		1, &ext1); // TODO: take the max of all loaded fonts.
 	//r->TermWin.fwidth = max (r->TermWin.fwidth, ext1.xOff);
 	if (ext1.xOff > r->TermWin.fwidth)
@@ -1589,9 +1589,9 @@ rxvt_init_font_xft (rxvt_t* r)
     r->TermWin.pheight  = max( r->TermWin.xftpfont->height,
 	    r->TermWin.xftPfont->height);
 
-    XftTextExtents8 (r->Xdisplay, r->TermWin.xftpfont, (unsigned char*) "@",
+    XftTextExtents8 (r->Xdisplay, r->TermWin.xftpfont, (unsigned char*) "W",
 	    1, &ext1);
-    XftTextExtents8 (r->Xdisplay, r->TermWin.xftPfont, (unsigned char*) "@",
+    XftTextExtents8 (r->Xdisplay, r->TermWin.xftPfont, (unsigned char*) "W",
 	    1, &ext2);
     r->TermWin.pwidth = max (ext1.xOff, ext2.xOff);
     //r->TermWin.pwidth   = r->TermWin.xftpfont->max_advance_width / 2;
