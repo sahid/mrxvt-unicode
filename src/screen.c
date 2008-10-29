@@ -3034,8 +3034,10 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
 
 	/*XFTDRAW_STRING (win, &(r->TermWin.xftshadow),
 	    font, x+sx, y+sy, str, len);*/
-	XftDrawString32 (win, &(r->TermWin.xftshadow),
-	    font, x+sx, y+sy, str, len);
+	if (rend & RS_acsFont)
+	    xftDrawACSString (r->Xdisplay, d, gc, win, &(r->TermWin.xftshadow), font, x + sx, y + sy, str, len);
+	else
+	    XftDrawString32 (win, &(r->TermWin.xftshadow), font, x+sx, y+sy, str, len);
 	/*
 	 * We need to free clipping area, otherwise text on screen may be
 	 * clipped unexpectedly. Is there a better way to unset it, say,
@@ -3045,7 +3047,10 @@ rxvt_draw_string_xft (rxvt_t* r, Drawable d, GC gc, Region refreshRegion,
     }
 # endif	/* TEXT_SHADOW */
 
-    XftDrawString32 (win, fore, font, x, y, (FcChar32*) str, len);
+    if (rend & RS_acsFont)
+      xftDrawACSString (r->Xdisplay, d, gc, win, fore, font, x, y, str, len);
+    else
+	XftDrawString32 (win, fore, font, x, y, (FcChar32*) str, len);
 }
 #undef XFTDRAW_STRING
 #endif	/* XFT_SUPPORT */
