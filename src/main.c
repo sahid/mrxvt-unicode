@@ -2512,7 +2512,7 @@ rxvt_set_term_title (rxvt_t* r, const unsigned char* str)
 
 /* EXTPROTO */
 void
-rxvt_set_icon_name (rxvt_t* r, const text_t *str)
+rxvt_set_icon_name (rxvt_t* r, const char* str)
 {
     //XTextProperty   prop;
 
@@ -2542,6 +2542,40 @@ rxvt_set_icon_name (rxvt_t* r, const text_t *str)
 #endif
 }
 
+/* EXTPROTO */
+void
+rxvt_set_icon_name_from_text_t (rxvt_t* r, const text_t *str, int str_size)
+{
+    //XTextProperty   prop;
+
+char* char_str;
+int from_text_to_char (r, str, str_size, char_str);
+#ifdef SMART_WINDOW_TITLE
+    char **icon_name_return = malloc (sizeof (char*));
+    if (XGetIconName(r->Xdisplay, r->TermWin.parent, icon_name_return) == 0)
+	SET_NULL(icon_name_return);
+    /*if (XGetWMIconName(r->Xdisplay, r->TermWin.parent, &prop) == 0)
+	SET_NULL(prop.value);*/
+    //if (IS_NULL(prop.value) || STRCMP(prop.value, str))
+    if (IS_NULL(*icon_name_return) || STRCMP(*icon_name_return, char_str))
+#endif
+    {
+	XChangeProperty (r->Xdisplay, r->TermWin.parent,
+	    XA_WM_ICON_NAME, XA_STRING, 8, PropModeReplace,
+	    (unsigned char*) str, STRLEN (char_str));
+#ifdef X_HAVE_UTF8_STRING
+	rxvt_set_utf8_property (r, r->h->xa[XA_NET_WM_ICON_NAME],
+	    r->TermWin.parent, (char*) str);
+#endif
+    }
+#ifdef SMART_WINDOW_TITLE
+    if (NOT_NULL (*icon_name_return))
+	    XFree (*icon_name_return);
+
+    rxvt_free (icon_name_return);	
+#endif
+    rxvt_free (char_str);
+}
 
 #ifdef XTERM_COLOR_CHANGE
 /* EXTPROTO */

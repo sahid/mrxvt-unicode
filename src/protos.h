@@ -152,7 +152,8 @@ int              rxvt_change_font_xft             __PROTO((rxvt_t* r, const char
 #endif
 void             rxvt_set_win_title               __PROTO((rxvt_t* r, Window win, const char* str));
 void             rxvt_set_term_title              __PROTO((rxvt_t* r, const unsigned char* str));
-void             rxvt_set_icon_name               __PROTO((rxvt_t* r, const text_t* str));
+void             rxvt_set_icon_name               __PROTO((rxvt_t* r, const char* str));
+void             rxvt_set_icon_name_from_text_t   __PROTO((rxvt_t* r, const text_t* str, int str_size));
 void             rxvt_set_window_color            __PROTO((rxvt_t* r, int page, int idx, const char* color));
 void             rxvt_recolour_cursor             __PROTO((rxvt_t *r));
 #ifdef XFT_SUPPORT
@@ -350,6 +351,8 @@ unsigned long	 rxvt_scrollbar_bg		  __PROTO((rxvt_t* r));
 
 
 /* Begin prototypes of strings.c */
+int from_char_to_text __PROTO((rxvt_t *r, const char* in_str, const int in_str_size, text_t* out_str));
+int from_text_to_char __PROTO((rxvt_t *r, const text_t* in_str, const int in_str_size, char* out_str));
 #ifdef HAVE_WCHAR_H
 char*            rxvt_wcstombs                    __PROTO((const wchar_t* str, int len));
 wchar_t*         rxvt_mbstowcs                    __PROTO((const char* str));

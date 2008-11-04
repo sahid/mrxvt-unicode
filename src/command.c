@@ -194,7 +194,7 @@ void           rxvt_process_x_event          (rxvt_t*, XEvent*);
 void           rxvt_process_print_pipe       (rxvt_t*, int);
 #endif
 void           rxvt_process_nonprinting      (rxvt_t*, int, text_t);
-void           rxvt_process_escape_vt52      (rxvt_t*, int, unsigned char);
+void           rxvt_process_escape_vt52      (rxvt_t*, int, text_t);
 void           rxvt_process_escape_seq       (rxvt_t*, int);
 void           rxvt_process_csi_seq          (rxvt_t*, int);
 #ifndef NO_FRILLS
@@ -5035,10 +5035,11 @@ rxvt_set_escfail( rxvt_t *r, int page, int nchars )
 {
     assert( PVTS(r, page)->textbuf_escstart );
 
-    rxvt_check_cmdbuf( r, page );
+    rxvt_check_textbuf (r, page);
+    //rxvt_check_cmdbuf( r, page );
     PVTS(r, page)->textbuf_escfail = PVTS(r, page)->textbuf_start + nchars - 1;
 
-    if( PVTS(r, page)->textbuf_escfail > PVTS(r, page)->textbuf_base + BUFSIZ-3 )
+    if( PVTS(r, page)->textbuf_escfail > PVTS(r, page)->textbuf_base + BUFSIZ)
     {
 	/*
 	 * Escape sequence was longer than BUFSIZ. Just skip the escape
@@ -5110,7 +5111,7 @@ rxvt_process_nonprinting(rxvt_t* r, int page, text_t ch)
 /*{{{ process VT52 escape sequences */
 /* INTPROTO */
 void
-rxvt_process_escape_vt52(rxvt_t* r, int page, unsigned char ch)
+rxvt_process_escape_vt52 (rxvt_t* r, int page, text_t ch)
 {
     int	    row, col;
     int	    readpage = page;
@@ -5156,7 +5157,7 @@ rxvt_process_escape_vt52(rxvt_t* r, int page, unsigned char ch)
 	    ** etc.
 	    */
 	    row = rxvt_cmd_getc(r, &readpage) - ' ';
-	    if( readpage == -1 )
+	    if (readpage == -1)
 	    {
 		rxvt_set_escfail( r, page, 2 );
 		break;
@@ -5201,18 +5202,18 @@ void
 rxvt_process_escape_seq(rxvt_t* r, int page)
 {
     int		    readpage = page;
-    unsigned char   c,
+    text_t	    c,
 		    ch = rxvt_cmd_getc(r, &readpage);
 
-    if( readpage == -1 )
+    if (readpage == -1)
     {
-	rxvt_set_escfail( r, page, 1 );
+	rxvt_set_escfail (r, page, 1);
 	return;
     }
 
     if (ISSET_PMODE(r, page, PrivMode_vt52))
     {
-	rxvt_process_escape_vt52(r, page, ch);
+	rxvt_process_escape_vt52 (r, page, ch);
 	return;
     }
 
@@ -5940,7 +5941,7 @@ rxvt_process_osc_seq (rxvt_t* r, int page)
     //unsigned char   ch, eh, *s;
     int		    arg;
 
-    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_process_osc_seq( r, %d). Active page %d\n", page, ATAB(r)));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "rxvt_process_osc_seq (r, page: %d). Active page %d\n", page, ATAB(r)));
 
     arg = 0;
     for(;;)
@@ -5948,24 +5949,19 @@ rxvt_process_osc_seq (rxvt_t* r, int page)
 	ch = rxvt_cmd_getc(r, &readpage);
 	if( readpage == -1 )
 	{
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\treadpage is -1!!!\n"));
 	    rxvt_set_escfail( r, page, 1 );
 	    return;
 	}
 
 	if( isdigit(ch) )
 	{
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ before is %d. ch is %d\n", arg, ch));
 	    arg = arg * 10 + (ch - '0');
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ after is %d\n", arg));
 	}
 	else
 	    break;
     }
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\targ at end is %d\n", arg));
 
-
-		rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tch is %d\n", ch));
+    rxvt_dbgmsg ((DBG_DEBUG, DBG_COMMAND,  "\tch is %d\n", ch));
     if (ch == ';')
     {
 	s = rxvt_get_to_st(r, page, &eh);
