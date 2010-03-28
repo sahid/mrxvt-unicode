@@ -1206,9 +1206,9 @@ rxvt_scr_add_lines (rxvt_t* r, int page, text_t* str, int nlines, int len)
 
 #ifdef XFT_SUPPORT
 	XftFont* font;
-#endif
 	
 	XGlyphInfo  extents;
+#endif
 
 	switch (c)
 	{
